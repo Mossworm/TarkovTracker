@@ -213,13 +213,7 @@
                   :key="`task-${task.id}`"
                   class="content-visibility-auto-420 pb-4"
                 >
-                  <TaskCard
-                    :accent-variant="
-                      shouldGroupGlobalTasks && isGlobalTask(task) ? 'global' : 'default'
-                    "
-                    :task="task"
-                    @on-task-action="handleTaskAction"
-                  />
+                  <TaskCard :task="task" @on-task-action="handleTaskAction" />
                 </div>
               </div>
               <div v-if="globalTasksInSlice.length > 0" class="mt-2 mb-6">
