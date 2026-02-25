@@ -15,7 +15,13 @@ export default defineEventHandler(async (event) => {
   const lang = getValidatedLanguage(query);
   const gameMode = validateGameMode(query.gameMode);
   const cacheKey = `tasks-objectives-${TASK_OBJECTIVES_CACHE_VERSION}-${lang}-${gameMode}`;
-  const baseFetcher = createTarkovFetcher(TARKOV_TASKS_OBJECTIVES_QUERY, { lang, gameMode });
+  const baseFetcher = createTarkovFetcher(
+    TARKOV_TASKS_OBJECTIVES_QUERY,
+    { lang, gameMode },
+    {
+      allowPartialData: true,
+    }
+  );
   const fetcher = async () => {
     const rawResponse = await baseFetcher();
     validateAndThrow<TarkovTaskObjectivesQueryResult>(rawResponse, logger, true);

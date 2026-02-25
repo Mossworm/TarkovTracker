@@ -23,6 +23,7 @@ type TarkovFetcherDependencies = {
 type TarkovFetcherOptions = {
   maxRetries?: number;
   timeoutMs?: number;
+  allowPartialData?: boolean;
   deps?: TarkovFetcherDependencies;
 };
 export function createTarkovFetcher<T = unknown>(
@@ -30,7 +31,7 @@ export function createTarkovFetcher<T = unknown>(
   variables: Record<string, unknown> = {},
   options: TarkovFetcherOptions = {}
 ): () => Promise<T> {
-  const { maxRetries = 3, timeoutMs = 30000, deps } = options;
+  const { maxRetries = 3, timeoutMs = 30000, allowPartialData = false, deps } = options;
   const fetcher = deps?.fetcher ?? ($fetch as TarkovFetcherRequest);
   const fetcherLogger = deps?.logger ?? logger;
   const sleep = deps?.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
@@ -54,8 +55,19 @@ export function createTarkovFetcher<T = unknown>(
         });
         if (response && typeof response === 'object' && 'errors' in response) {
           const responseErrors = (response as { errors?: unknown }).errors;
+          const responseData = (response as { data?: unknown }).data;
+          const hasData = responseData !== null && responseData !== undefined;
           if (Array.isArray(responseErrors)) {
+            if (responseErrors.length === 0) {
+              return response;
+            }
+            if (allowPartialData && hasData) {
+              return response;
+            }
             throw new Error(`GraphQL errors: ${sanitizeGraphQLErrors(responseErrors)}`);
+          }
+          if (allowPartialData && hasData) {
+            return response;
           }
           throw new Error(
             `GraphQL response contained non-array errors (${typeof responseErrors}): ${sanitizeGraphQLErrors(responseErrors)}`

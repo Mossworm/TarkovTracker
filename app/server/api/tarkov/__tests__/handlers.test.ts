@@ -131,7 +131,11 @@ describe('Tarkov API handlers', () => {
   it('builds expected cache key for items-lite', async () => {
     const { default: handler } = await import('@/server/api/tarkov/items-lite.get');
     await handler(event);
-    expect(mockCreateTarkovFetcher).toHaveBeenCalledWith('ITEMS_LITE_QUERY', { lang: 'en' });
+    expect(mockCreateTarkovFetcher).toHaveBeenCalledWith(
+      'ITEMS_LITE_QUERY',
+      { lang: 'en' },
+      { allowPartialData: true }
+    );
     expect(mockValidateAndThrow).toHaveBeenCalled();
     expect(mockEdgeCache).toHaveBeenCalledWith(event, 'items-lite-en', expect.any(Function), 222, {
       cacheKeyPrefix: 'tarkov',
@@ -140,7 +144,11 @@ describe('Tarkov API handlers', () => {
   it('builds expected cache key for items', async () => {
     const { default: handler } = await import('@/server/api/tarkov/items.get');
     await handler(event);
-    expect(mockCreateTarkovFetcher).toHaveBeenCalledWith('ITEMS_QUERY', { lang: 'en' });
+    expect(mockCreateTarkovFetcher).toHaveBeenCalledWith(
+      'ITEMS_QUERY',
+      { lang: 'en' },
+      { allowPartialData: true }
+    );
     expect(mockValidateAndThrow).toHaveBeenCalled();
     expect(mockEdgeCache).toHaveBeenCalledWith(event, 'items-en', expect.any(Function), 222, {
       cacheKeyPrefix: 'tarkov',

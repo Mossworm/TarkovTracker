@@ -15,7 +15,13 @@ export default defineEventHandler(async (event) => {
   const lang = getValidatedLanguage(query);
   const gameMode = validateGameMode(query.gameMode);
   const cacheKey = `tasks-rewards-${lang}-${gameMode}`;
-  const baseFetcher = createTarkovFetcher(TARKOV_TASKS_REWARDS_QUERY, { lang, gameMode });
+  const baseFetcher = createTarkovFetcher(
+    TARKOV_TASKS_REWARDS_QUERY,
+    { lang, gameMode },
+    {
+      allowPartialData: true,
+    }
+  );
   const fetcher = async () => {
     const rawResponse = await baseFetcher();
     validateAndThrow<TarkovTaskRewardsQueryResult>(rawResponse, logger, true);

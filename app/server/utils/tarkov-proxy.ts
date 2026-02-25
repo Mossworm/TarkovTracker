@@ -14,7 +14,9 @@ export function createValidatedTarkovProxyFetcher<TData, TOutput = TarkovGraphql
 ): () => Promise<TOutput> {
   const { allowPartialData = true, mapResponse } = options;
   const logger = createLogger(loggerName);
-  const baseFetcher = createTarkovFetcher<TarkovGraphqlResponse<TData>>(query, variables);
+  const baseFetcher = createTarkovFetcher<TarkovGraphqlResponse<TData>>(query, variables, {
+    allowPartialData,
+  });
   return async () => {
     const response = await baseFetcher();
     validateAndThrow<TData>(response, logger, allowPartialData);

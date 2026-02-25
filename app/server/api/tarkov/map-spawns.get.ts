@@ -12,7 +12,13 @@ export default defineEventHandler(async (event) => {
   const lang = getValidatedLanguage(query);
   const gameMode = validateGameMode(query.gameMode);
   const cacheKey = `map-spawns-${lang}-${gameMode}`;
-  const baseFetcher = createTarkovFetcher(TARKOV_MAP_SPAWNS_QUERY, { lang, gameMode });
+  const baseFetcher = createTarkovFetcher(
+    TARKOV_MAP_SPAWNS_QUERY,
+    { lang, gameMode },
+    {
+      allowPartialData: true,
+    }
+  );
   const fetcher = async () => {
     const rawResponse = await baseFetcher();
     validateAndThrow<TarkovMapSpawnsQueryResult>(rawResponse, logger, true);

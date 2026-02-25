@@ -36,6 +36,25 @@ describe('createTarkovFetcher', () => {
     await expect(run()).rejects.toThrow('GraphQL errors:');
     expect(logger.error).toHaveBeenCalledTimes(1);
   });
+  it('returns partial data when allowPartialData is enabled', async () => {
+    const response = {
+      data: { items: [{ id: 'itm-1' }] },
+      errors: [{ message: 'Cannot return null for non-nullable field Foo.bar.' }],
+    };
+    const fetcher = vi.fn().mockResolvedValue(response);
+    const logger = { error: vi.fn(), warn: vi.fn() };
+    const run = createTarkovFetcher(
+      'query Test { items { id } }',
+      {},
+      {
+        allowPartialData: true,
+        maxRetries: 1,
+        deps: { fetcher, logger },
+      }
+    );
+    await expect(run()).resolves.toEqual(response);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
   it('redacts sensitive variables in final failure logs', async () => {
     const fetcher = vi.fn().mockRejectedValue(new Error('boom'));
     const logger = { error: vi.fn(), warn: vi.fn() };
