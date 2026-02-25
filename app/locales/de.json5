@@ -148,15 +148,6 @@
       title: 'Armaturenbrett',
     },
     dashboard: {
-      birthday_banner: {
-        title: 'Wir feiern TarkovTracker — 24. Februar 2026',
-        message: 'Heute hat Dys Geburtstag, und nächsten Monat ist es ein Jahr, seit er TarkovTracker betreut. Seit dem kompletten Neuaufbau der Seite zu Jahresbeginn hat Dys über 575 Updates eingespielt und fast eine halbe Million Zeilen Code geschrieben, um TarkovTracker zu dem zu machen, was es heute ist. Wenn dir die Seite bei deinen Raids hilft und du ihre Weiterentwicklung unterstützen möchtest, bedeutet eine Spende enorm viel und hilft, alles am Laufen zu halten. Danke, dass du TarkovTracker nutzt, ohne dich gäbe es das Projekt nicht.',
-        shoutout: 'Großen Dank an unser Team, unsere Mitwirkenden und Beta-Tester, die dieses Projekt möglich machen.',
-        credits_link: 'Team ansehen',
-        support_button: 'Auf Ko-fi unterstützen',
-        dismiss: 'Ausblenden',
-        show: 'Feier anzeigen',
-      },
       changelog: {
         title: 'Neuigkeiten',
         show: 'Updates anzeigen',

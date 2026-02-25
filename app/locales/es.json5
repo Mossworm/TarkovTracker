@@ -148,15 +148,6 @@
       title: 'Panel',
     },
     dashboard: {
-      birthday_banner: {
-        title: 'Celebrando TarkovTracker — 24 de febrero de 2026',
-        message: 'Hoy es el cumpleaños de Dys, y el próximo mes se cumple 1 año desde que mantiene TarkovTracker. Desde reconstruir el sitio desde cero al inicio de este año, Dys ha publicado más de 575 actualizaciones y escrito casi medio millón de líneas de código para llevar TarkovTracker a donde está hoy. Si este sitio te ha ayudado en tus incursiones y quieres que siga mejorando, una donación significaría muchísimo y ayudaría a mantenerlo en marcha. Gracias por elegir TarkovTracker; sin ti no existiría.',
-        shoutout: 'Un enorme gracias a nuestro equipo, colaboradores y beta testers que hacen posible este proyecto.',
-        credits_link: 'Ver el equipo',
-        support_button: 'Apoyar en Ko-fi',
-        dismiss: 'Cerrar',
-        show: 'Mostrar celebración',
-      },
       changelog: {
         title: 'Novedades',
         show: 'Mostrar actualizaciones',

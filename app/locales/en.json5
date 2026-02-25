@@ -148,15 +148,6 @@
       title: 'Dashboard',
     },
     dashboard: {
-      birthday_banner: {
-        title: 'Celebrating TarkovTracker — February 24, 2026',
-        message: "It's Dys's birthday today, and next month marks 1 year of maintaining TarkovTracker! Since rebuilding the site from scratch at the start of this year, Dys has pushed over 575 updates and written nearly half a million lines of code to make TarkovTracker what it is today. If this site has helped your raids and you'd like to see it keep improving, a donation would mean the world and help keep things running. Thank you for choosing TarkovTracker — it wouldn't be here without you.",
-        shoutout: 'Huge thanks to our staff, contributors, and beta testers who make this project possible.',
-        credits_link: 'See the team',
-        support_button: 'Support on Ko-fi',
-        dismiss: 'Dismiss',
-        show: 'Show celebration',
-      },
       changelog: {
         title: "What's new",
         show: 'Show updates',

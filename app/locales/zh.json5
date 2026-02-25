@@ -148,15 +148,6 @@
       title: '总览面板',
     },
     dashboard: {
-      birthday_banner: {
-        title: '庆祝 TarkovTracker — 2026年2月24日',
-        message: '今天是 Dys 的生日，下个月也正好是他维护 TarkovTracker 满一周年。自今年年初从零重建网站以来，Dys 已提交 575+ 次更新，写下近 50 万行代码，才有了今天的 TarkovTracker。如果这个网站帮助过你的每一次突袭，并且你希望它继续变得更好，一份捐助将意义重大，也能帮助项目持续运行。感谢你选择 TarkovTracker，没有你就没有这个项目。',
-        shoutout: '特别感谢我们的核心团队、贡献者和封测成员，是你们让这个项目成为可能。',
-        credits_link: '查看团队',
-        support_button: '在 Ko-fi 支持',
-        dismiss: '关闭',
-        show: '显示庆祝横幅',
-      },
       changelog: {
         title: '更新日志',
         show: '显示更新',
