@@ -8,7 +8,7 @@ import { CACHE_TTL_DEFAULT, validateGameMode } from '~/server/utils/tarkov-cache
 import { TARKOV_TASKS_OBJECTIVES_QUERY } from '~/server/utils/tarkov-queries';
 import { createTarkovFetcher } from '~/server/utils/tarkovFetcher';
 const logger = createLogger('TarkovTaskObjectives');
-const TASK_OBJECTIVES_CACHE_VERSION = 'v2';
+const TASK_OBJECTIVES_CACHE_VERSION = 'v3';
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const bypassCache = shouldBypassCache(event);

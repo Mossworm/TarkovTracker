@@ -69,7 +69,7 @@ type IdleTask = {
   reject: (error: unknown) => void;
   expiresAt: number;
 };
-const TASK_OBJECTIVES_CACHE_VERSION = 'v2';
+const TASK_OBJECTIVES_CACHE_VERSION = 'v3';
 const idleQueue: IdleTask[] = [];
 let idleRunnerActive = false;
 const CACHE_PURGE_STORAGE_KEY = STORAGE_KEYS.cachePurgeAt;
@@ -1158,7 +1158,11 @@ export const useMetadataStore = defineStore('metadata', {
         cacheType: 'tasks-objectives' as CacheType,
         cacheKey: `${TASK_OBJECTIVES_CACHE_VERSION}-${apiGameMode}`,
         endpoint: '/api/tarkov/tasks-objectives',
-        queryParams: { lang: this.languageCode, gameMode: apiGameMode },
+        queryParams: {
+          gameMode: apiGameMode,
+          lang: this.languageCode,
+          version: TASK_OBJECTIVES_CACHE_VERSION,
+        },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
         loadingKey: 'tasksObjectivesPending',
         processData: (data) => {
@@ -1199,7 +1203,11 @@ export const useMetadataStore = defineStore('metadata', {
         const response = await $fetch<FetchResponse<TarkovTaskObjectivesQueryResult>>(
           '/api/tarkov/tasks-objectives',
           {
-            query: { lang: requestLanguageCode, gameMode: otherApiMode },
+            query: {
+              gameMode: otherApiMode,
+              lang: requestLanguageCode,
+              version: TASK_OBJECTIVES_CACHE_VERSION,
+            },
           }
         );
         if (isFetchError(response)) {
