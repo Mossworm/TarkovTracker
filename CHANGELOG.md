@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.16.1...v1.16.2) (2026-03-01)
+
+
+### Bug Fixes
+
+* stabilize imports and overlay objective handling ([684c5a8](https://github.com/tarkovtracker-org/TarkovTracker/commit/684c5a8bf5875ec5ab0a288bada7d29a44f81724))
+
 ## [1.16.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.16.0...v1.16.1) (2026-02-25)
 
 
