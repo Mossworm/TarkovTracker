@@ -238,6 +238,12 @@
       route_blocked: 'Blocked',
       route_blocks: 'Blocks: {objectives}',
       route_blocked_by: 'Blocked by: {objectives}',
+      route_decision: 'Decision {index}',
+      route_choose_one: 'Choose one',
+      route_required_steps: 'Required steps',
+      route_optional_steps: 'Optional steps',
+      route_selected_hint: 'This route is active.',
+      route_switch_hint: 'To switch routes, uncheck the selected route first.',
     },
     tasks: {
       title: 'Завдання',

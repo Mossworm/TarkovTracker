@@ -40,6 +40,7 @@ const TEST_CHAPTERS = [
     ],
     mainObjectiveCompleted: 0,
     mainObjectiveTotal: 1,
+    mainRouteChoices: [],
     mainObjectives: [
       {
         id: 'objective-1',
@@ -52,6 +53,20 @@ const TEST_CHAPTERS = [
         routeState: 'open',
       },
     ],
+    mainLinearObjectives: [
+      {
+        id: 'objective-1',
+        order: 1,
+        type: 'main',
+        description: 'Complete main objective',
+        complete: false,
+        routeAlternatives: [],
+        routeBlockingAlternatives: [],
+        routeState: 'open',
+      },
+    ],
+    optionalRouteChoices: [],
+    optionalLinearObjectives: [],
     optionalObjectives: [],
   },
 ];
@@ -115,6 +130,13 @@ describe('ProfileStorylineTab', () => {
       { id: 'objective-2', label: 'Alternative objective', complete: true },
     ];
     normalizedChapters.value[0].mainObjectives[0].routeBlockingAlternatives = [
+      { id: 'objective-2', label: 'Alternative objective', complete: true },
+    ];
+    normalizedChapters.value[0].mainLinearObjectives[0].routeState = 'blocked';
+    normalizedChapters.value[0].mainLinearObjectives[0].routeAlternatives = [
+      { id: 'objective-2', label: 'Alternative objective', complete: true },
+    ];
+    normalizedChapters.value[0].mainLinearObjectives[0].routeBlockingAlternatives = [
       { id: 'objective-2', label: 'Alternative objective', complete: true },
     ];
     const wrapper = await createWrapper(false);

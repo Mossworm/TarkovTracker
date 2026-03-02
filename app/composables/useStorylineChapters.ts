@@ -33,6 +33,11 @@ export interface StorylineObjectiveRouteView {
   label: string;
   complete: boolean;
 }
+export interface StorylineRouteChoiceGroup {
+  chosenObjectiveId: string | null;
+  id: string;
+  objectives: StorylineObjectiveProgress[];
+}
 export interface StorylineObjectiveProgress extends StoryObjective {
   complete: boolean;
   routeAlternatives: StorylineObjectiveRouteView[];
@@ -46,8 +51,12 @@ export interface StorylineNormalizedChapterView extends Omit<
   mainObjectiveCompleted: number;
   mainObjectiveTotal: number;
   mainObjectives: StorylineObjectiveProgress[];
+  mainLinearObjectives: StorylineObjectiveProgress[];
+  mainRouteChoices: StorylineRouteChoiceGroup[];
   objectives: StorylineObjectiveProgress[];
   optionalObjectives: StorylineObjectiveProgress[];
+  optionalLinearObjectives: StorylineObjectiveProgress[];
+  optionalRouteChoices: StorylineRouteChoiceGroup[];
   requirements: StorylineRequirementView[];
 }
 interface UseStorylineChaptersOptions {
@@ -82,6 +91,82 @@ const normalizeChapterRequirements = (
       };
     })
     .filter((requirement): requirement is StorylineRequirementView => Boolean(requirement));
+};
+const buildRouteChoiceGroups = (
+  objectives: StorylineObjectiveProgress[]
+): {
+  linearObjectives: StorylineObjectiveProgress[];
+  routeChoiceGroups: StorylineRouteChoiceGroup[];
+} => {
+  const objectiveById = new Map(objectives.map((objective) => [objective.id, objective]));
+  const groupedObjectiveIds = new Set<string>();
+  const visited = new Set<string>();
+  const routeChoiceGroups: StorylineRouteChoiceGroup[] = [];
+  for (const objective of objectives) {
+    if (visited.has(objective.id)) {
+      continue;
+    }
+    const linkedIds = objective.mutuallyExclusiveWith ?? [];
+    if (linkedIds.length === 0) {
+      continue;
+    }
+    const stack = [objective.id];
+    const componentIds = new Set<string>();
+    while (stack.length > 0) {
+      const currentId = stack.pop()!;
+      if (componentIds.has(currentId)) {
+        continue;
+      }
+      componentIds.add(currentId);
+      visited.add(currentId);
+      const currentObjective = objectiveById.get(currentId);
+      if (!currentObjective) {
+        continue;
+      }
+      for (const nextId of currentObjective.mutuallyExclusiveWith ?? []) {
+        if (objectiveById.has(nextId) && !componentIds.has(nextId)) {
+          stack.push(nextId);
+        }
+      }
+    }
+    if (componentIds.size < 2) {
+      continue;
+    }
+    const groupedObjectives = Array.from(componentIds)
+      .map((objectiveId) => objectiveById.get(objectiveId))
+      .filter((value): value is StorylineObjectiveProgress => Boolean(value))
+      .sort((left, right) => {
+        if (left.order !== right.order) {
+          return left.order - right.order;
+        }
+        return left.id.localeCompare(right.id);
+      });
+    if (groupedObjectives.length < 2) {
+      continue;
+    }
+    groupedObjectives.forEach((groupedObjective) => {
+      groupedObjectiveIds.add(groupedObjective.id);
+    });
+    routeChoiceGroups.push({
+      chosenObjectiveId:
+        groupedObjectives.find((groupedObjective) => groupedObjective.complete)?.id ?? null,
+      id: `${groupedObjectives[0]!.id}-route-choice`,
+      objectives: groupedObjectives,
+    });
+  }
+  routeChoiceGroups.sort((left, right) => {
+    const leftOrder = Math.min(...left.objectives.map((objective) => objective.order));
+    const rightOrder = Math.min(...right.objectives.map((objective) => objective.order));
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+    return left.id.localeCompare(right.id);
+  });
+  const linearObjectives = objectives.filter((objective) => !groupedObjectiveIds.has(objective.id));
+  return {
+    linearObjectives,
+    routeChoiceGroups,
+  };
 };
 export function useStorylineChapters(options: UseStorylineChaptersOptions = {}): {
   chapters: ComputedRef<StorylineChapterView[]>;
@@ -157,13 +242,23 @@ export function useStorylineChapters(options: UseStorylineChaptersOptions = {}):
       });
       const mainObjectives = objectives.filter((objective) => objective.type === 'main');
       const optionalObjectives = objectives.filter((objective) => objective.type === 'optional');
+      const { linearObjectives: mainLinearObjectives, routeChoiceGroups: mainRouteChoices } =
+        buildRouteChoiceGroups(mainObjectives);
+      const {
+        linearObjectives: optionalLinearObjectives,
+        routeChoiceGroups: optionalRouteChoices,
+      } = buildRouteChoiceGroups(optionalObjectives);
       return {
         ...chapter,
         mainObjectiveCompleted: mainObjectives.filter((objective) => objective.complete).length,
         mainObjectiveTotal: mainObjectives.length,
+        mainLinearObjectives,
         mainObjectives,
+        mainRouteChoices,
         objectives,
+        optionalLinearObjectives,
         optionalObjectives,
+        optionalRouteChoices,
         requirements: normalizeChapterRequirements(chapter),
       };
     });

@@ -75,9 +75,107 @@
           <span>{{ t('page.profile.storyline_objectives_main') }}</span>
           <span>{{ chapter.mainObjectiveCompleted }}/{{ chapter.mainObjectiveTotal }}</span>
         </div>
+        <div v-if="chapter.mainRouteChoices.length" class="mb-1.5 space-y-1.5">
+          <div
+            v-for="(routeChoice, routeIndex) in chapter.mainRouteChoices"
+            :key="routeChoice.id"
+            class="border-warning-700/30 bg-warning-950/10 rounded-md border p-2"
+          >
+            <div class="mb-1 flex items-center justify-between gap-2">
+              <div class="text-warning-300 text-[11px] font-medium tracking-wider uppercase">
+                {{ t('page.storyline.route_decision', { index: routeIndex + 1 }) }}
+              </div>
+              <UBadge variant="subtle" color="warning" size="xs">
+                {{ t('page.storyline.route_choose_one') }}
+              </UBadge>
+            </div>
+            <div class="grid grid-cols-1 gap-1">
+              <label
+                v-for="objective in routeChoice.objectives"
+                :key="objective.id"
+                class="flex items-start gap-1.5 rounded border p-2"
+                :class="
+                  objective.routeState === 'chosen'
+                    ? 'border-success-700/40 bg-success-950/20'
+                    : objective.routeState === 'blocked'
+                      ? 'border-error-700/30 bg-error-950/10 cursor-not-allowed opacity-70'
+                      : 'bg-surface-900/40 cursor-pointer border-white/10 hover:bg-white/5'
+                "
+              >
+                <input
+                  type="checkbox"
+                  :checked="objective.complete"
+                  class="accent-success-500 mt-0.5 shrink-0"
+                  :disabled="objective.routeState === 'blocked'"
+                  @change="emit('toggleObjective', chapter.id, objective.id)"
+                />
+                <span class="min-w-0 flex-1">
+                  <span class="flex flex-wrap items-center gap-1">
+                    <span
+                      class="text-xs"
+                      :class="
+                        objective.complete ? 'text-surface-500 line-through' : 'text-surface-200'
+                      "
+                    >
+                      {{ objective.description }}
+                    </span>
+                    <UBadge
+                      v-if="objective.routeState === 'chosen'"
+                      variant="subtle"
+                      color="success"
+                      size="xs"
+                    >
+                      {{ t('page.storyline.route_chosen') }}
+                    </UBadge>
+                    <UBadge
+                      v-else-if="objective.routeState === 'blocked'"
+                      variant="subtle"
+                      color="error"
+                      size="xs"
+                    >
+                      {{ t('page.storyline.route_blocked') }}
+                    </UBadge>
+                  </span>
+                  <span
+                    v-if="objective.routeState === 'chosen'"
+                    class="text-success-300 mt-0.5 block text-[11px] leading-tight"
+                  >
+                    {{ t('page.storyline.route_selected_hint') }}
+                  </span>
+                  <span
+                    v-else-if="
+                      objective.routeState === 'blocked' &&
+                      objective.routeBlockingAlternatives.length
+                    "
+                    class="text-error-300 mt-0.5 block text-[11px] leading-tight"
+                  >
+                    {{
+                      t('page.storyline.route_blocked_by', {
+                        objectives: objective.routeBlockingAlternatives
+                          .map((entry) => entry.label)
+                          .join(', '),
+                      })
+                    }}
+                  </span>
+                </span>
+              </label>
+            </div>
+            <div
+              v-if="routeChoice.chosenObjectiveId"
+              class="text-warning-200 mt-1 text-[11px] leading-tight"
+            >
+              {{ t('page.storyline.route_switch_hint') }}
+            </div>
+          </div>
+        </div>
+        <div v-if="chapter.mainLinearObjectives.length" class="mb-1">
+          <div class="text-surface-500 mb-0.5 text-[11px] font-medium tracking-wider uppercase">
+            {{ t('page.storyline.route_required_steps') }}
+          </div>
+        </div>
         <div class="space-y-0.5">
           <label
-            v-for="objective in chapter.mainObjectives"
+            v-for="objective in chapter.mainLinearObjectives"
             :key="objective.id"
             class="flex items-start gap-1.5 rounded px-1 py-0.5"
             :class="
@@ -161,9 +259,107 @@
         <div class="text-surface-500 mb-0.5 text-[11px] font-medium tracking-wider uppercase">
           {{ t('page.profile.storyline_objectives_optional') }}
         </div>
+        <div v-if="chapter.optionalRouteChoices.length" class="mb-1.5 space-y-1.5">
+          <div
+            v-for="(routeChoice, routeIndex) in chapter.optionalRouteChoices"
+            :key="routeChoice.id"
+            class="border-info-700/30 bg-info-950/10 rounded-md border p-2"
+          >
+            <div class="mb-1 flex items-center justify-between gap-2">
+              <div class="text-info-300 text-[11px] font-medium tracking-wider uppercase">
+                {{ t('page.storyline.route_decision', { index: routeIndex + 1 }) }}
+              </div>
+              <UBadge variant="subtle" color="info" size="xs">
+                {{ t('page.storyline.route_choose_one') }}
+              </UBadge>
+            </div>
+            <div class="grid grid-cols-1 gap-1">
+              <label
+                v-for="objective in routeChoice.objectives"
+                :key="objective.id"
+                class="flex items-start gap-1.5 rounded border p-2"
+                :class="
+                  objective.routeState === 'chosen'
+                    ? 'border-success-700/40 bg-success-950/20'
+                    : objective.routeState === 'blocked'
+                      ? 'border-error-700/30 bg-error-950/10 cursor-not-allowed opacity-70'
+                      : 'bg-surface-900/40 cursor-pointer border-white/10 hover:bg-white/5'
+                "
+              >
+                <input
+                  type="checkbox"
+                  :checked="objective.complete"
+                  class="accent-info-500 mt-0.5 shrink-0"
+                  :disabled="objective.routeState === 'blocked'"
+                  @change="emit('toggleObjective', chapter.id, objective.id)"
+                />
+                <span class="min-w-0 flex-1">
+                  <span class="flex flex-wrap items-center gap-1">
+                    <span
+                      class="text-xs"
+                      :class="
+                        objective.complete ? 'text-surface-500 line-through' : 'text-surface-200'
+                      "
+                    >
+                      {{ objective.description }}
+                    </span>
+                    <UBadge
+                      v-if="objective.routeState === 'chosen'"
+                      variant="subtle"
+                      color="success"
+                      size="xs"
+                    >
+                      {{ t('page.storyline.route_chosen') }}
+                    </UBadge>
+                    <UBadge
+                      v-else-if="objective.routeState === 'blocked'"
+                      variant="subtle"
+                      color="error"
+                      size="xs"
+                    >
+                      {{ t('page.storyline.route_blocked') }}
+                    </UBadge>
+                  </span>
+                  <span
+                    v-if="objective.routeState === 'chosen'"
+                    class="text-success-300 mt-0.5 block text-[11px] leading-tight"
+                  >
+                    {{ t('page.storyline.route_selected_hint') }}
+                  </span>
+                  <span
+                    v-else-if="
+                      objective.routeState === 'blocked' &&
+                      objective.routeBlockingAlternatives.length
+                    "
+                    class="text-error-300 mt-0.5 block text-[11px] leading-tight"
+                  >
+                    {{
+                      t('page.storyline.route_blocked_by', {
+                        objectives: objective.routeBlockingAlternatives
+                          .map((entry) => entry.label)
+                          .join(', '),
+                      })
+                    }}
+                  </span>
+                </span>
+              </label>
+            </div>
+            <div
+              v-if="routeChoice.chosenObjectiveId"
+              class="text-info-200 mt-1 text-[11px] leading-tight"
+            >
+              {{ t('page.storyline.route_switch_hint') }}
+            </div>
+          </div>
+        </div>
+        <div v-if="chapter.optionalLinearObjectives.length" class="mb-1">
+          <div class="text-surface-500 mb-0.5 text-[11px] font-medium tracking-wider uppercase">
+            {{ t('page.storyline.route_optional_steps') }}
+          </div>
+        </div>
         <div class="space-y-0.5">
           <label
-            v-for="objective in chapter.optionalObjectives"
+            v-for="objective in chapter.optionalLinearObjectives"
             :key="objective.id"
             class="flex items-start gap-1.5 rounded px-1 py-0.5"
             :class="

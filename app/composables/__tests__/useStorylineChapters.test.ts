@@ -83,6 +83,17 @@ describe('useStorylineChapters', () => {
     expect(objectiveC?.routeState).toBe('open');
     expect(chapter.mainObjectiveCompleted).toBe(1);
     expect(chapter.mainObjectiveTotal).toBe(2);
+    expect(chapter.mainRouteChoices).toHaveLength(1);
+    expect(chapter.mainRouteChoices[0]?.objectives.map((objective) => objective.id)).toEqual([
+      'obj-a',
+      'obj-b',
+    ]);
+    expect(chapter.mainLinearObjectives).toEqual([]);
+    expect(chapter.optionalRouteChoices).toEqual([]);
+    expect(chapter.optionalLinearObjectives.map((objective) => objective.id)).toEqual([
+      'obj-c',
+      'obj-d',
+    ]);
   });
   it('ignores missing mutually exclusive links when deriving route alternatives', async () => {
     const { normalizedChapters } = await loadComposable();
