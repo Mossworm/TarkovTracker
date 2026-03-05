@@ -1,3 +1,11 @@
+## [1.19.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.19.0...v1.19.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* recover from blocked chunk and network asset requests ([45f9599](https://github.com/tarkovtracker-org/TarkovTracker/commit/45f95997d651b22247ee53067a79c9f7d75ca38d))
+* **ci:** resolve strict type errors in storyline tests ([cf0e366](https://github.com/tarkovtracker-org/TarkovTracker/commit/cf0e366836d340a226153198622c266a0fa925c9))
+
 # [1.19.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.18.0...v1.19.0) (2026-03-02)
 
 
