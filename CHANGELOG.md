@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.20.0...v1.21.0) (2026-03-07)
+
+
+### Features
+
+* **profile:** update storyline and sync flows ([a8b5ee7](https://github.com/tarkovtracker-org/TarkovTracker/commit/a8b5ee73c45e6e4dadd6dca0149430f1a2455dad))
+
 # [1.20.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.19.2...v1.20.0) (2026-03-07)
 
 
