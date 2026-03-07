@@ -21,6 +21,7 @@ const tarkovStore = {
     traders: {},
     skills: { Endurance: 10 },
     prestigeLevel: 1,
+    progressEpoch: 4,
     skillOffsets: {},
     storyChapters: {},
   })),
@@ -36,6 +37,7 @@ const tarkovStore = {
     traders: {},
     skills: {},
     prestigeLevel: 0,
+    progressEpoch: 0,
     skillOffsets: {},
     storyChapters: {},
   })),
@@ -408,6 +410,7 @@ describe('useDataBackup', () => {
         traders: {},
         skills: {},
         prestigeLevel: 2,
+        progressEpoch: 2,
         skillOffsets: {},
         storyChapters: {},
       },
@@ -423,6 +426,7 @@ describe('useDataBackup', () => {
         traders: {},
         skills: {},
         prestigeLevel: 0,
+        progressEpoch: 1,
         skillOffsets: {},
         storyChapters: {},
       },
@@ -438,13 +442,14 @@ describe('useDataBackup', () => {
       ) => void;
       const mockState = {
         currentGameMode: 'pve',
-        pvp: { level: 1 },
-        pve: { level: 1 },
+        pvp: { level: 1, progressEpoch: 5 },
+        pve: { level: 1, progressEpoch: 3 },
         gameEdition: 1,
         tarkovUid: null,
       };
       patchFn(mockState);
       expect(mockState.pvp.level).toBe(10);
+      expect(mockState.pvp.progressEpoch).toBe(6);
       expect(mockState.pve.level).toBe(1);
       expect(mockState.gameEdition).toBe(1);
       expect(mockState.tarkovUid).toBeNull();
@@ -459,14 +464,15 @@ describe('useDataBackup', () => {
       ) => void;
       const mockState = {
         currentGameMode: 'pvp',
-        pvp: { level: 1 },
-        pve: { level: 1 },
+        pvp: { level: 1, progressEpoch: 5 },
+        pve: { level: 1, progressEpoch: 3 },
         gameEdition: 1,
         tarkovUid: null,
       };
       patchFn(mockState);
       expect(mockState.pvp.level).toBe(1);
       expect(mockState.pve.level).toBe(5);
+      expect(mockState.pve.progressEpoch).toBe(4);
       expect(mockState.gameEdition).toBe(1);
       expect(mockState.tarkovUid).toBeNull();
       expect(mockState.currentGameMode).toBe('pve');
@@ -480,14 +486,16 @@ describe('useDataBackup', () => {
       ) => void;
       const mockState = {
         currentGameMode: 'pvp',
-        pvp: { level: 1 },
-        pve: { level: 1 },
+        pvp: { level: 1, progressEpoch: 5 },
+        pve: { level: 1, progressEpoch: 7 },
         gameEdition: 1,
         tarkovUid: null,
       };
       patchFn(mockState);
       expect(mockState.pvp.level).toBe(10);
       expect(mockState.pve.level).toBe(5);
+      expect(mockState.pvp.progressEpoch).toBe(6);
+      expect(mockState.pve.progressEpoch).toBe(8);
       expect(mockState.gameEdition).toBe(3);
       expect(mockState.tarkovUid).toBe(12345);
       expect(mockState.currentGameMode).toBe('pve');

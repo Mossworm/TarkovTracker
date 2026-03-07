@@ -47,6 +47,7 @@ const RECENT_LOCAL_SYNC_HISTORY_SIZE = 20;
 const SYNC_RESUME_DELAY_MS = 1000;
 const RESET_SETTLE_DELAY_MS = 100;
 const API_UPDATE_FRESHNESS_MS = 30000;
+const API_UPDATE_HISTORY_LIMIT = 50;
 const ISSUE_71_ACCOUNT_AGE_THRESHOLD_MS = 5000;
 const LOAD_RETRY_COUNT = 3;
 const LOAD_RETRY_DELAY_MS = 500;
@@ -63,6 +64,34 @@ type UserProgressRow = {
   pve_data: UserProgressData | null;
   created_at: string | null;
   updated_at: string | null;
+};
+export type PrestigeRunSummary = {
+  completedHideoutModules: number;
+  completedHideoutParts: number;
+  completedObjectives: number;
+  completedStoryChapters: number;
+  completedTasks: number;
+  failedTasks: number;
+  firstActionAt: number | null;
+  lastActionAt: number | null;
+  level: number;
+  prestigeLevel: number;
+};
+export type PrestigeRunRecord = {
+  createdAt: string;
+  id: string;
+  mode: 'pvp' | 'pve';
+  prestigeFrom: number;
+  prestigeTo: number;
+  summary: PrestigeRunSummary;
+};
+type UserPrestigeRunRow = {
+  created_at?: string | null;
+  id?: string | null;
+  mode?: 'pvp' | 'pve' | null;
+  prestige_from?: number | null;
+  prestige_to?: number | null;
+  summary?: Record<string, unknown> | null;
 };
 const coerceGameMode = (mode?: string | null): GameMode => {
   return mode === GAME_MODES.PVE ? GAME_MODES.PVE : GAME_MODES.PVP;
@@ -123,6 +152,214 @@ const cloneStateSnapshot = <T>(value: T): T => {
   } catch {
     return JSON.parse(JSON.stringify(rawValue)) as T;
   }
+};
+const toProgressEpoch = (modeData: UserProgressData | undefined): number => {
+  if (
+    !modeData ||
+    typeof modeData.progressEpoch !== 'number' ||
+    !Number.isFinite(modeData.progressEpoch)
+  ) {
+    return 0;
+  }
+  return Math.max(0, Math.trunc(modeData.progressEpoch));
+};
+const getNextProgressEpoch = (modeData: UserProgressData | undefined): number => {
+  return Math.min(2147483647, toProgressEpoch(modeData) + 1);
+};
+const collectTimestamp = (timestamps: number[], value: number | undefined) => {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    timestamps.push(Math.trunc(value));
+  }
+};
+const buildPrestigeRunSummary = (modeData: UserProgressData): Record<string, number | null> => {
+  const taskCompletions = Object.values(modeData.taskCompletions || {});
+  const taskObjectives = Object.values(modeData.taskObjectives || {});
+  const hideoutModules = Object.values(modeData.hideoutModules || {});
+  const hideoutParts = Object.values(modeData.hideoutParts || {});
+  const storyChapters = Object.values(modeData.storyChapters || {});
+  const completedTasks = taskCompletions.reduce((count, completion) => {
+    if (completion?.complete === true && completion?.failed !== true) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+  const failedTasks = taskCompletions.reduce((count, completion) => {
+    if (completion?.failed === true) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+  const completedObjectives = taskObjectives.reduce((count, objective) => {
+    if (objective?.complete === true) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+  const completedHideoutModules = hideoutModules.reduce((count, module) => {
+    if (module?.complete === true) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+  const completedHideoutParts = hideoutParts.reduce((count, part) => {
+    if (part?.complete === true) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+  const completedStoryChapters = storyChapters.reduce((count, chapter) => {
+    if (chapter?.complete === true) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+  const timestamps: number[] = [];
+  for (const completion of taskCompletions) {
+    collectTimestamp(timestamps, completion?.timestamp);
+  }
+  for (const objective of taskObjectives) {
+    collectTimestamp(timestamps, objective?.timestamp);
+  }
+  for (const module of hideoutModules) {
+    collectTimestamp(timestamps, module?.timestamp);
+  }
+  for (const part of hideoutParts) {
+    collectTimestamp(timestamps, part?.timestamp);
+  }
+  for (const chapter of storyChapters) {
+    collectTimestamp(timestamps, chapter?.timestamp);
+    for (const objective of Object.values(chapter?.objectives || {})) {
+      collectTimestamp(timestamps, objective?.timestamp);
+    }
+  }
+  const firstActionAt = timestamps.length > 0 ? Math.min(...timestamps) : null;
+  const lastActionAt = timestamps.length > 0 ? Math.max(...timestamps) : null;
+  return {
+    completedHideoutModules,
+    completedHideoutParts,
+    completedObjectives,
+    completedStoryChapters,
+    completedTasks,
+    failedTasks,
+    firstActionAt,
+    lastActionAt,
+    level: modeData.level ?? 1,
+    prestigeLevel: modeData.prestigeLevel ?? 0,
+  };
+};
+const buildPrestigeResetData = (
+  modeData: UserProgressData,
+  nextPrestigeLevel: number
+): UserProgressData => ({
+  ...structuredClone(defaultState.pvp),
+  displayName: modeData.displayName ?? null,
+  pmcFaction: modeData.pmcFaction ?? 'USEC',
+  prestigeLevel: Math.max(0, Math.min(6, nextPrestigeLevel)),
+  progressEpoch: getNextProgressEpoch(modeData),
+});
+const shouldPreferLocalStartupMetadata = (
+  localTimestamp: number | null,
+  remoteUpdatedAt: number | null,
+  localScore: number,
+  remoteScore: number
+): boolean => {
+  if (localTimestamp && remoteUpdatedAt) {
+    return localTimestamp > remoteUpdatedAt;
+  }
+  if (localTimestamp && !remoteUpdatedAt) {
+    return localScore > remoteScore;
+  }
+  if (!localTimestamp && !remoteUpdatedAt) {
+    return localScore > remoteScore;
+  }
+  return false;
+};
+const resolveInitialSyncState = (
+  localState: UserState,
+  remoteState: UserState,
+  localTimestamp: number | null,
+  remoteUpdatedAt: number | null,
+  localScore: number,
+  remoteScore: number
+): UserState => {
+  const preferLocalMetadata = shouldPreferLocalStartupMetadata(
+    localTimestamp,
+    remoteUpdatedAt,
+    localScore,
+    remoteScore
+  );
+  const resolveModeData = (
+    localModeData: UserProgressData,
+    remoteModeData: UserProgressData
+  ): UserProgressData => {
+    const localEpoch = toProgressEpoch(localModeData);
+    const remoteEpoch = toProgressEpoch(remoteModeData);
+    if (localEpoch !== remoteEpoch) {
+      return mergeProgressData(localModeData, remoteModeData);
+    }
+    return preferLocalMetadata ? localModeData : remoteModeData;
+  };
+  return {
+    currentGameMode: preferLocalMetadata ? localState.currentGameMode : remoteState.currentGameMode,
+    gameEdition: preferLocalMetadata
+      ? localState.gameEdition || defaultState.gameEdition
+      : remoteState.gameEdition || defaultState.gameEdition,
+    tarkovUid: preferLocalMetadata
+      ? (localState.tarkovUid ?? null)
+      : (remoteState.tarkovUid ?? null),
+    pvp: resolveModeData(localState.pvp, remoteState.pvp),
+    pve: resolveModeData(localState.pve, remoteState.pve),
+  };
+};
+const toSafeInteger = (value: unknown, fallback = 0): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.trunc(value);
+};
+const parsePrestigeSummary = (value: unknown): PrestigeRunSummary => {
+  const raw = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const toCount = (input: unknown): number => Math.max(0, toSafeInteger(input, 0));
+  const toNullableTimestamp = (input: unknown): number | null => {
+    if (typeof input !== 'number' || !Number.isFinite(input)) return null;
+    const truncated = Math.trunc(input);
+    return truncated > 0 ? truncated : null;
+  };
+  return {
+    completedHideoutModules: toCount(raw.completedHideoutModules),
+    completedHideoutParts: toCount(raw.completedHideoutParts),
+    completedObjectives: toCount(raw.completedObjectives),
+    completedStoryChapters: toCount(raw.completedStoryChapters),
+    completedTasks: toCount(raw.completedTasks),
+    failedTasks: toCount(raw.failedTasks),
+    firstActionAt: toNullableTimestamp(raw.firstActionAt),
+    lastActionAt: toNullableTimestamp(raw.lastActionAt),
+    level: Math.max(1, toCount(raw.level)),
+    prestigeLevel: Math.max(0, Math.min(6, toCount(raw.prestigeLevel))),
+  };
+};
+const parsePrestigeRunRows = (
+  rows: UserPrestigeRunRow[] | null | undefined
+): PrestigeRunRecord[] => {
+  if (!Array.isArray(rows)) return [];
+  const parsed: PrestigeRunRecord[] = [];
+  for (const row of rows) {
+    if (!row || typeof row.id !== 'string' || !row.id) continue;
+    const mode = row.mode === 'pve' ? 'pve' : 'pvp';
+    const createdAt =
+      typeof row.created_at === 'string' ? row.created_at : new Date().toISOString();
+    const prestigeFrom = Math.max(0, Math.min(6, toSafeInteger(row.prestige_from, 0)));
+    const prestigeTo = Math.max(1, Math.min(6, toSafeInteger(row.prestige_to, prestigeFrom + 1)));
+    parsed.push({
+      createdAt,
+      id: row.id,
+      mode,
+      prestigeFrom,
+      prestigeTo,
+      summary: parsePrestigeSummary(row.summary),
+    });
+  }
+  return parsed.sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
 };
 type CountableEntry = { count?: number; complete?: boolean; timestamp?: number };
 type StoryChapterEntry = UserProgressData['storyChapters'][string];
@@ -529,10 +766,16 @@ const executeWithSyncPause = async <T>(operation: () => Promise<T>): Promise<T> 
 };
 const performReset = async (
   mode: ResetMode,
-  store: { $patch: (fn: (state: UserState) => void) => void }
+  store: { $patch: (fn: (state: UserState) => void) => void; $state: UserState }
 ): Promise<void> => {
   const { $supabase } = useNuxtApp();
   const freshState = structuredClone(defaultState);
+  if (mode === 'all' || mode === 'pvp') {
+    freshState.pvp.progressEpoch = getNextProgressEpoch(store.$state.pvp);
+  }
+  if (mode === 'all' || mode === 'pve') {
+    freshState.pve.progressEpoch = getNextProgressEpoch(store.$state.pve);
+  }
   if ($supabase.user.loggedIn && $supabase.user.id) {
     const payload =
       mode === 'all'
@@ -696,6 +939,8 @@ const tarkovActions = {
     }
     try {
       const freshState = structuredClone(defaultState);
+      freshState.pvp.progressEpoch = getNextProgressEpoch(this.pvp);
+      freshState.pve.progressEpoch = getNextProgressEpoch(this.pve);
       await $supabase.client
         .from('user_progress')
         .upsert(buildUpsertPayload($supabase.user.id, freshState));
@@ -736,6 +981,72 @@ const tarkovActions = {
     logger.debug('[TarkovStore] Resetting all data (both PvP and PvE)...');
     await executeWithSyncPause(() => performReset('all', this));
     logger.debug('[TarkovStore] All data reset complete');
+  },
+  async prestigePvP(this: TarkovStoreInstance) {
+    const { $supabase } = useNuxtApp();
+    const userId = $supabase.user.id;
+    if (!$supabase.user.loggedIn || !userId) {
+      throw new Error('User not logged in. Cannot prestige PvP profile.');
+    }
+    if (this.currentGameMode !== GAME_MODES.PVP) {
+      throw new Error('PvP prestige is only available while PvP mode is active.');
+    }
+    const currentPrestige = Math.max(0, Math.min(6, Math.trunc(this.pvp.prestigeLevel || 0)));
+    if (currentPrestige >= 6) {
+      throw new Error('Maximum prestige level reached.');
+    }
+    const nextPrestige = currentPrestige + 1;
+    const archivedProgress = cloneStateSnapshot(this.pvp);
+    const archivedAt = Date.now();
+    const summary = buildPrestigeRunSummary(archivedProgress);
+    const resetPvpData = buildPrestigeResetData(archivedProgress, nextPrestige);
+    await executeWithSyncPause(async () => {
+      const { error: prestigeError } = await $supabase.client.rpc(
+        'archive_prestige_run_and_reset_progress',
+        {
+          p_archived_progress: archivedProgress,
+          p_created_at: new Date(archivedAt).toISOString(),
+          p_current_game_mode: this.$state.currentGameMode || GAME_MODES.PVP,
+          p_game_edition: this.$state.gameEdition || defaultState.gameEdition,
+          p_mode: 'pvp',
+          p_prestige_from: currentPrestige,
+          p_prestige_to: nextPrestige,
+          p_pve_data: this.$state.pve ?? defaultState.pve,
+          p_pvp_data: resetPvpData,
+          p_summary: summary,
+          p_tarkov_uid: this.$state.tarkovUid ?? null,
+        }
+      );
+      if (prestigeError) {
+        throw new Error(`Failed to update prestige progress: ${prestigeError.message}`);
+      }
+      recordLocalSyncTime();
+      this.$patch((state) => {
+        state.pvp = resetPvpData;
+      });
+    });
+  },
+  async fetchPrestigeRuns(
+    this: TarkovStoreInstance,
+    mode: 'pvp' | 'pve' = 'pvp',
+    limit = 20
+  ): Promise<PrestigeRunRecord[]> {
+    const { $supabase } = useNuxtApp();
+    if (!$supabase.user.loggedIn || !$supabase.user.id) {
+      return [];
+    }
+    const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+    const { data, error } = await $supabase.client
+      .from('user_prestige_runs')
+      .select('id, mode, prestige_from, prestige_to, summary, created_at')
+      .eq('user_id', $supabase.user.id)
+      .eq('mode', mode)
+      .order('created_at', { ascending: false })
+      .limit(safeLimit);
+    if (error) {
+      throw new Error(`Failed to load prestige history: ${error.message}`);
+    }
+    return parsePrestigeRunRows((data as UserPrestigeRunRow[]) || []);
   },
   /**
    * Repair failed task states for existing users.
@@ -1136,6 +1447,8 @@ const tarkovActions = {
   resetPvPData(): Promise<void>;
   resetPvEData(): Promise<void>;
   resetAllData(): Promise<void>;
+  prestigePvP(): Promise<void>;
+  fetchPrestigeRuns(mode?: 'pvp' | 'pve', limit?: number): Promise<PrestigeRunRecord[]>;
   repairFailedTaskStates(): { pvpRepaired: number; pveRepaired: number };
   repairCompletedTaskObjectives(): { pvpRepaired: number; pveRepaired: number };
   repairGameModeFailedTasks(gameModeData: UserProgressData, tasksMap: Map<string, Task>): number;
@@ -1492,39 +1805,46 @@ export async function initializeTarkovSync() {
         if (hasLocalProgress && !localOwnedByUser && storedUserId === null) {
           notifyLocalIgnored('guest');
         }
-        let shouldPreferLocal = false;
-        if (localOwnedByUser && localTimestamp && remoteUpdatedAt) {
-          shouldPreferLocal = localTimestamp > remoteUpdatedAt;
-        } else if (localOwnedByUser && localTimestamp && !remoteUpdatedAt) {
-          shouldPreferLocal = localScore > remoteScore;
-        } else if (localOwnedByUser && !localTimestamp && !remoteUpdatedAt) {
-          shouldPreferLocal = localScore > remoteScore;
-        }
-        // If local has more progress than remote, protect local and push it to Supabase.
-        // Skip sync if scores are equal - no need to push identical data.
-        if (shouldPreferLocal && localScore !== remoteScore) {
-          logger.warn('[TarkovStore] Local progress ahead of Supabase; preserving local data', {
+        if (hasLocalProgress && localOwnedByUser) {
+          const resolvedState = resolveInitialSyncState(
+            localState,
+            normalizedRemote!,
+            localTimestamp,
+            remoteUpdatedAt,
             localScore,
-            remoteScore,
-          });
-          recordLocalSyncTime(); // Track for self-origin filtering
-          const { error: upsertError } = await $supabase.client.from('user_progress').upsert({
-            user_id: $supabase.user.id,
-            current_game_mode: localState.currentGameMode || GAME_MODES.PVP,
-            game_edition: localState.gameEdition || defaultState.gameEdition,
-            tarkov_uid: localState.tarkovUid ?? null,
-            pvp_data: localState.pvp || defaultState.pvp,
-            pve_data: localState.pve || defaultState.pve,
-          });
-          if (upsertError) {
-            logger.error('[TarkovStore] Error syncing local progress to Supabase:', upsertError);
-            return { ok: false, hadRemoteData };
+            remoteScore
+          );
+          const remoteMatchesResolved = deepEqual(resolvedState, normalizedRemote);
+          if (!remoteMatchesResolved) {
+            logger.warn('[TarkovStore] Startup sync merged local and remote progress', {
+              localPveEpoch: toProgressEpoch(localState.pve),
+              localPvpEpoch: toProgressEpoch(localState.pvp),
+              localScore,
+              remotePveEpoch: toProgressEpoch(normalizedRemote?.pve),
+              remotePvpEpoch: toProgressEpoch(normalizedRemote?.pvp),
+              remoteScore,
+            });
+            recordLocalSyncTime();
+            const { error: upsertError } = await $supabase.client
+              .from('user_progress')
+              .upsert(buildUpsertPayload($supabase.user.id, resolvedState));
+            if (upsertError) {
+              logger.error('[TarkovStore] Error syncing merged progress to Supabase:', upsertError);
+              return { ok: false, hadRemoteData };
+            }
+          } else {
+            logger.debug('[TarkovStore] Startup sync resolved to existing remote state');
           }
-          resolvedLocalState = localState;
-        } else if (shouldPreferLocal && localScore === remoteScore) {
-          // Local timestamp is newer but data is identical - no sync needed
-          logger.debug('[TarkovStore] Local timestamp newer but data identical; skipping sync');
-          resolvedLocalState = localState;
+          if (!deepEqual(resolvedState, localState)) {
+            tarkovStore.$patch((state) => {
+              state.currentGameMode = resolvedState.currentGameMode;
+              state.gameEdition = resolvedState.gameEdition;
+              state.tarkovUid = resolvedState.tarkovUid;
+              state.pvp = { ...state.pvp, ...resolvedState.pvp };
+              state.pve = { ...state.pve, ...resolvedState.pve };
+            });
+          }
+          resolvedLocalState = resolvedState;
         } else {
           logger.debug('[TarkovStore] Loading data from Supabase (user exists in DB)');
           tarkovStore.$patch((state) => {
@@ -1739,6 +2059,59 @@ const normalizeApiTaskUpdates = (updates: ApiUpdateMeta['tasks']): ApiTaskUpdate
       Boolean(update) && typeof update.id === 'string' && isApiTaskState(update.state)
   );
 };
+const normalizeApiUpdateMetaEntry = (value: unknown): ApiUpdateMeta | null => {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<ApiUpdateMeta>;
+  if (
+    candidate.source !== 'api' ||
+    typeof candidate.id !== 'string' ||
+    !candidate.id ||
+    typeof candidate.at !== 'number' ||
+    !Number.isFinite(candidate.at)
+  ) {
+    return null;
+  }
+  const tasks = normalizeApiTaskUpdates(candidate.tasks);
+  return {
+    at: candidate.at,
+    id: candidate.id,
+    source: 'api',
+    ...(tasks.length ? { tasks } : {}),
+  };
+};
+const normalizeApiUpdateHistoryEntries = (value: unknown): ApiUpdateMeta[] => {
+  if (!Array.isArray(value)) return [];
+  const deduped = new Map<string, ApiUpdateMeta>();
+  for (const entry of value) {
+    const normalized = normalizeApiUpdateMetaEntry(entry);
+    if (!normalized) continue;
+    const existing = deduped.get(normalized.id);
+    if (!existing || normalized.at >= existing.at) {
+      deduped.set(normalized.id, normalized);
+    }
+  }
+  return Array.from(deduped.values())
+    .sort((a, b) => b.at - a.at)
+    .slice(0, API_UPDATE_HISTORY_LIMIT);
+};
+const buildApiUpdateHistory = (data: UserProgressData | undefined): ApiUpdateMeta[] => {
+  if (!data) return [];
+  const history = normalizeApiUpdateHistoryEntries(data.apiUpdateHistory);
+  const latest = normalizeApiUpdateMetaEntry(data.lastApiUpdate);
+  if (!latest || history.some((entry) => entry.id === latest.id)) {
+    return history;
+  }
+  return normalizeApiUpdateHistoryEntries([latest, ...history]);
+};
+const mergeApiUpdateHistory = (
+  local: UserProgressData | undefined,
+  remote: UserProgressData | undefined
+): ApiUpdateMeta[] => {
+  return normalizeApiUpdateHistoryEntries([
+    ...buildApiUpdateHistory(local),
+    ...buildApiUpdateHistory(remote),
+  ]);
+};
 const getToastTranslator = (): ToastTranslate => {
   try {
     const { $i18n } = useNuxtApp();
@@ -1782,16 +2155,7 @@ const formatApiUpdateDescription = (
   return `${label}: ${formatted.join(', ')}${suffix}.`;
 };
 const getApiUpdateMeta = (data: UserProgressData | undefined): ApiUpdateMeta | null => {
-  const meta = data?.lastApiUpdate;
-  if (
-    !meta ||
-    meta.source !== 'api' ||
-    typeof meta.id !== 'string' ||
-    typeof meta.at !== 'number'
-  ) {
-    return null;
-  }
-  return meta;
+  return normalizeApiUpdateMetaEntry(data?.lastApiUpdate);
 };
 const maybeNotifyApiUpdate = (
   mode: 'pvp' | 'pve',
@@ -2030,6 +2394,14 @@ export function mergeProgressData(
   if (!local && !remote) return {} as UserProgressData;
   if (!local) return remote!;
   if (!remote) return local;
+  const localEpoch = toProgressEpoch(local);
+  const remoteEpoch = toProgressEpoch(remote);
+  if (remoteEpoch > localEpoch) {
+    return { ...remote, progressEpoch: remoteEpoch };
+  }
+  if (localEpoch > remoteEpoch) {
+    return { ...local, progressEpoch: localEpoch };
+  }
   // Merge task completions with "sticky complete" semantics:
   // - Uses timestamp-based merge as the baseline (newer entry wins)
   // - Treats absence of a `complete` flag (undefined) as "no explicit change"
@@ -2064,11 +2436,11 @@ export function mergeProgressData(
     localUpdate?: ApiUpdateMeta,
     remoteUpdate?: ApiUpdateMeta
   ): ApiUpdateMeta | undefined => {
-    if (!localUpdate) return remoteUpdate;
-    if (!remoteUpdate) return localUpdate;
-    const localAt = typeof localUpdate.at === 'number' ? localUpdate.at : 0;
-    const remoteAt = typeof remoteUpdate.at === 'number' ? remoteUpdate.at : 0;
-    return remoteAt >= localAt ? remoteUpdate : localUpdate;
+    const normalizedLocal = normalizeApiUpdateMetaEntry(localUpdate);
+    const normalizedRemote = normalizeApiUpdateMetaEntry(remoteUpdate);
+    if (!normalizedLocal) return normalizedRemote ?? undefined;
+    if (!normalizedRemote) return normalizedLocal;
+    return normalizedRemote.at >= normalizedLocal.at ? normalizedRemote : normalizedLocal;
   };
   const resolveTarkovDevProfile = (
     localProfile?: UserProgressData['tarkovDevProfile'],
@@ -2082,15 +2454,17 @@ export function mergeProgressData(
       typeof remoteProfile.importedAt === 'number' ? remoteProfile.importedAt : 0;
     return remoteImportedAt >= localImportedAt ? remoteProfile : localProfile;
   };
-  return {
+  const mergedState: UserProgressData = {
     ...local,
     ...remote,
+    progressEpoch: localEpoch,
     level: Math.max(local.level || 1, remote.level || 1),
     prestigeLevel: Math.max(local.prestigeLevel || 0, remote.prestigeLevel || 0),
     displayName: remote.displayName || local.displayName,
     pmcFaction: remote.pmcFaction || local.pmcFaction,
     xpOffset: remote.xpOffset !== undefined ? remote.xpOffset : local.xpOffset,
     lastApiUpdate: resolveApiUpdate(local.lastApiUpdate, remote.lastApiUpdate),
+    apiUpdateHistory: mergeApiUpdateHistory(local, remote),
     tarkovDevProfile: resolveTarkovDevProfile(local.tarkovDevProfile, remote.tarkovDevProfile),
     // Merge task completions - preserve completed status to prevent progress regression
     taskCompletions: (() => {
@@ -2156,6 +2530,9 @@ export function mergeProgressData(
       ...remote.skillOffsets,
     },
   };
+  return Object.fromEntries(
+    Object.entries(mergedState).filter(([, value]) => value !== undefined)
+  ) as UserProgressData;
 }
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return Object.prototype.toString.call(value) === '[object Object]';

@@ -61,6 +61,7 @@ const ALLOWED_PROGRESS_KEYS = new Set([
   'traders',
   'skills',
   'prestigeLevel',
+  'progressEpoch',
   'skillOffsets',
   'storyChapters',
   'tarkovDevProfile',
@@ -68,6 +69,24 @@ const ALLOWED_PROGRESS_KEYS = new Set([
 const VALID_FACTIONS = new Set<Faction>(['USEC', 'BEAR']);
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function toProgressEpoch(data: UserProgressData | undefined): number {
+  if (!data || typeof data.progressEpoch !== 'number' || !Number.isFinite(data.progressEpoch)) {
+    return 0;
+  }
+  return Math.max(0, Math.trunc(data.progressEpoch));
+}
+function createImportedProgressData(
+  importedData: UserProgressData,
+  currentData: UserProgressData | undefined
+): UserProgressData {
+  return {
+    ...structuredClone(importedData),
+    progressEpoch: Math.min(
+      2147483647,
+      Math.max(toProgressEpoch(importedData), toProgressEpoch(currentData)) + 1
+    ),
+  };
 }
 function sanitizeProgressData(
   raw: unknown
@@ -106,6 +125,10 @@ function sanitizeProgressData(
   const prestigeLevel =
     typeof stripped.prestigeLevel === 'number' && Number.isFinite(stripped.prestigeLevel)
       ? Math.max(0, Math.min(6, Math.trunc(stripped.prestigeLevel)))
+      : 0;
+  const progressEpoch =
+    typeof stripped.progressEpoch === 'number' && Number.isFinite(stripped.progressEpoch)
+      ? Math.max(0, Math.trunc(stripped.progressEpoch))
       : 0;
   const xpOffset =
     typeof stripped.xpOffset === 'number' && Number.isFinite(stripped.xpOffset)
@@ -149,6 +172,7 @@ function sanitizeProgressData(
         : {},
       skills,
       prestigeLevel,
+      progressEpoch,
       skillOffsets: isPlainObject(stripped.skillOffsets)
         ? (stripped.skillOffsets as UserProgressData['skillOffsets'])
         : {},
@@ -231,8 +255,8 @@ function buildPreview(
     pve: modePreview(pve),
   };
 }
-function stripLastApiUpdate(data: UserProgressData): UserProgressData {
-  const { lastApiUpdate: _, ...rest } = data;
+function stripInternalSyncMetadata(data: UserProgressData): UserProgressData {
+  const { apiUpdateHistory: _, lastApiUpdate: __, ...rest } = data;
   return rest as UserProgressData;
 }
 export function useDataBackup(): UseDataBackupReturn {
@@ -257,8 +281,12 @@ export function useDataBackup(): UseDataBackupReturn {
     let url: string | null = null;
     try {
       const runtimeConfig = useRuntimeConfig();
-      const pvpData = stripLastApiUpdate(structuredClone(toRaw(tarkovStore.getPvPProgressData())));
-      const pveData = stripLastApiUpdate(structuredClone(toRaw(tarkovStore.getPvEProgressData())));
+      const pvpData = stripInternalSyncMetadata(
+        structuredClone(toRaw(tarkovStore.getPvPProgressData()))
+      );
+      const pveData = stripInternalSyncMetadata(
+        structuredClone(toRaw(tarkovStore.getPvEProgressData()))
+      );
       const backup: TarkovTrackerExport = {
         _format: BACKUP_FORMAT,
         _version: 1,
@@ -342,10 +370,10 @@ export function useDataBackup(): UseDataBackupReturn {
       }
       tarkovStore.$patch((state: UserState) => {
         if (importPvp) {
-          state.pvp = structuredClone(pvpData);
+          state.pvp = createImportedProgressData(pvpData, state.pvp);
         }
         if (importPve) {
-          state.pve = structuredClone(pveData);
+          state.pve = createImportedProgressData(pveData, state.pve);
         }
         if (importBoth) {
           state.gameEdition = exportData.gameEdition;

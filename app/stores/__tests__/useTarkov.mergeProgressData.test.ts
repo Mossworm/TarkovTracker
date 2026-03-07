@@ -15,6 +15,7 @@ const createProgressData = (
   traders: {},
   skills: {},
   prestigeLevel: 0,
+  progressEpoch: 0,
   skillOffsets: {},
   storyChapters,
 });
@@ -87,5 +88,29 @@ describe('mergeProgressData story chapters', () => {
       complete: true,
       timestamp: 2000,
     });
+  });
+});
+describe('mergeProgressData progress epoch', () => {
+  it('prefers remote data when remote epoch is newer', () => {
+    const local = createProgressData({});
+    local.level = 35;
+    local.progressEpoch = 3;
+    const remote = createProgressData({});
+    remote.level = 1;
+    remote.progressEpoch = 4;
+    const merged = mergeProgressData(local, remote);
+    expect(merged.level).toBe(1);
+    expect(merged.progressEpoch).toBe(4);
+  });
+  it('prefers local data when local epoch is newer', () => {
+    const local = createProgressData({});
+    local.level = 35;
+    local.progressEpoch = 5;
+    const remote = createProgressData({});
+    remote.level = 1;
+    remote.progressEpoch = 4;
+    const merged = mergeProgressData(local, remote);
+    expect(merged.level).toBe(35);
+    expect(merged.progressEpoch).toBe(5);
   });
 });

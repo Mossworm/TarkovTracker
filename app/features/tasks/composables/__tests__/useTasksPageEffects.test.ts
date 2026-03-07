@@ -14,6 +14,40 @@ const createTask = (id: string): Task =>
     taskRequirements: [],
   }) as Task;
 describe('useTasksPageEffects', () => {
+  it('does not run load-more when filtered task ids are unchanged', async () => {
+    const metadataStore = {
+      fetchMapSpawnsData: vi.fn(async () => undefined),
+    };
+    const showMapDisplay = computed(() => true);
+    const selectedMapData = computed(() => ({ id: 'woods' }));
+    const isMapPanelExpanded = ref(true);
+    const stopResize = vi.fn();
+    const filteredTasksState = ref([createTask('1')]);
+    const filteredTasks = computed(() => filteredTasksState.value);
+    const visibleTaskCount = ref(8);
+    const checkAndLoadMore = vi.fn(async () => undefined);
+    const route = reactive({ query: { task: undefined, highlightObjective: undefined } });
+    const tasksLoading = ref(false);
+    const handleTaskQueryParam = vi.fn();
+    useTasksPageEffects({
+      batchSize: 8,
+      checkAndLoadMore,
+      filteredTasks,
+      handleTaskQueryParam,
+      isMapPanelExpanded,
+      metadataStore,
+      route: route as { query: Record<string, unknown> },
+      selectedMapData,
+      showMapDisplay,
+      stopResize,
+      tasksLoading,
+      visibleTaskCount,
+    });
+    filteredTasksState.value = [createTask('1')];
+    await nextTick();
+    await nextTick();
+    expect(checkAndLoadMore).not.toHaveBeenCalled();
+  });
   it('fetches map spawns, resets paging, and handles deep-link query', async () => {
     const metadataStore = {
       fetchMapSpawnsData: vi.fn(async () => undefined),

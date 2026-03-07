@@ -52,6 +52,7 @@ export interface UserProgressData {
   traders: { [traderId: string]: TraderProgress };
   skills: { [skillName: string]: number };
   prestigeLevel: number;
+  progressEpoch?: number;
   skillOffsets: { [skillName: string]: number };
   storyChapters: {
     [chapterId: string]: {
@@ -61,5 +62,6 @@ export interface UserProgressData {
     };
   };
   lastApiUpdate?: ApiUpdateMeta;
+  apiUpdateHistory?: ApiUpdateMeta[];
   tarkovDevProfile?: TarkovDevProfileData;
 }

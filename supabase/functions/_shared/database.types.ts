@@ -614,6 +614,22 @@ export type Database = {
       }
     }
     Functions: {
+      archive_prestige_run_and_reset_progress: {
+        Args: {
+          p_archived_progress: Json
+          p_created_at: string
+          p_current_game_mode: string
+          p_game_edition: number
+          p_mode: string
+          p_prestige_from: number
+          p_prestige_to: number
+          p_pve_data?: Json
+          p_pvp_data: Json
+          p_summary: Json
+          p_tarkov_uid: number | null
+        }
+        Returns: undefined
+      }
       cleanup_old_deletion_attempts: {
         Args: { retention_days?: number }
         Returns: {

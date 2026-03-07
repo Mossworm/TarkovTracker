@@ -42,8 +42,10 @@ const defaultProgressData: UserProgressData = {
   traders: {},
   skills: {},
   prestigeLevel: 0,
+  progressEpoch: 0,
   skillOffsets: {},
   storyChapters: {},
+  apiUpdateHistory: [],
 };
 export const defaultState: UserState = {
   currentGameMode: GAME_MODES.PVP,
@@ -101,8 +103,10 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
       traders: (data.traders as UserProgressData['traders']) || {},
       skills: (data.skills as UserProgressData['skills']) || {},
       prestigeLevel: (data.prestigeLevel as number) || defaultProgressData.prestigeLevel,
+      progressEpoch: (data.progressEpoch as number) || defaultProgressData.progressEpoch,
       skillOffsets: (data.skillOffsets as UserProgressData['skillOffsets']) || {},
       storyChapters: (data.storyChapters as UserProgressData['storyChapters']) || {},
+      apiUpdateHistory: (data.apiUpdateHistory as UserProgressData['apiUpdateHistory']) || [],
     };
     return {
       currentGameMode: data.currentGameMode as GameMode,
@@ -126,8 +130,10 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
     traders: (data.traders as UserProgressData['traders']) || {},
     skills: (data.skills as UserProgressData['skills']) || {},
     prestigeLevel: (data.prestigeLevel as number) || defaultProgressData.prestigeLevel,
+    progressEpoch: (data.progressEpoch as number) || defaultProgressData.progressEpoch,
     skillOffsets: (data.skillOffsets as UserProgressData['skillOffsets']) || {},
     storyChapters: (data.storyChapters as UserProgressData['storyChapters']) || {},
+    apiUpdateHistory: (data.apiUpdateHistory as UserProgressData['apiUpdateHistory']) || [],
   };
   return {
     currentGameMode: GAME_MODES.PVP, // Default to PvP for existing users
@@ -163,8 +169,10 @@ const getCurrentData = (state: UserState): UserProgressData => {
       traders: {},
       skills: {},
       prestigeLevel: 0,
+      progressEpoch: 0,
       skillOffsets: {},
       storyChapters: {},
+      apiUpdateHistory: [],
     };
   }
   return state[state.currentGameMode];
@@ -204,6 +212,7 @@ export const getters = {
     getCurrentData(state)?.skills?.[skillName] ?? 0,
   getXpOffset: (state: UserState) => () => getCurrentData(state)?.xpOffset ?? 0,
   getPrestigeLevel: (state: UserState) => () => getCurrentData(state)?.prestigeLevel ?? 0,
+  getProgressEpoch: (state: UserState) => () => getCurrentData(state)?.progressEpoch ?? 0,
   getSkillOffset: (state: UserState) => (skillName: string) =>
     getCurrentData(state)?.skillOffsets?.[skillName] ?? 0,
   getAllSkillOffsets: (state: UserState) => () => getCurrentData(state)?.skillOffsets ?? {},

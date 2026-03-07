@@ -36,6 +36,7 @@ const {
     traders: {},
     skills: {},
     prestigeLevel: 0,
+    progressEpoch: 0,
     skillOffsets: {},
     storyChapters: {},
     ...overrides,
@@ -203,6 +204,7 @@ const progressWithTaskState = (taskId: string, complete: boolean): UserProgressD
   traders: {},
   skills: {},
   prestigeLevel: 0,
+  progressEpoch: 0,
   skillOffsets: {},
   storyChapters: {},
 });
@@ -218,6 +220,7 @@ const progressWithLevel = (level: number): UserProgressData => ({
   traders: {},
   skills: {},
   prestigeLevel: 0,
+  progressEpoch: 0,
   skillOffsets: {},
   storyChapters: {},
 });
@@ -368,6 +371,123 @@ describe('useTarkov sync integration', () => {
         pvp_data: expect.objectContaining({ level: 10 }),
       })
     );
+  });
+  it('merges local startup progress with remote higher-epoch resets before syncing', async () => {
+    const store = useTarkovStore();
+    store.$patch((state) => {
+      state.currentGameMode = 'pve';
+      state.pvp = {
+        ...state.pvp,
+        level: 42,
+        progressEpoch: 2,
+        taskCompletions: {
+          'task-old': {
+            complete: true,
+            failed: false,
+            timestamp: 1000,
+          },
+        },
+      };
+      state.pve = {
+        ...state.pve,
+        level: 8,
+        progressEpoch: 0,
+        taskCompletions: {
+          'task-new': {
+            complete: true,
+            failed: false,
+            timestamp: 2000,
+          },
+        },
+      };
+    });
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: Date.now(),
+        _userId: 'user-1',
+        data: store.$state,
+      })
+    );
+    single.mockResolvedValue({
+      data: createRemoteRow({
+        current_game_mode: 'pvp',
+        pvp_data: {
+          ...progressWithLevel(1),
+          level: 1,
+          progressEpoch: 3,
+        },
+        pve_data: {
+          ...progressWithLevel(1),
+          level: 1,
+          progressEpoch: 0,
+        },
+        updated_at: '2026-02-01T00:00:00.000Z',
+      }),
+      error: null,
+    });
+    await initializeTarkovSync();
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        current_game_mode: 'pve',
+        pvp_data: expect.objectContaining({
+          level: 1,
+          progressEpoch: 3,
+        }),
+        pve_data: expect.objectContaining({
+          level: 8,
+          progressEpoch: 0,
+        }),
+        user_id: 'user-1',
+      })
+    );
+    expect(store.pvp.level).toBe(1);
+    expect(store.pvp.progressEpoch).toBe(3);
+    expect(store.pve.level).toBe(8);
+    expect(store.currentGameMode).toBe('pve');
+  });
+  it('keeps newer remote clears when the local cache is older and the epoch is unchanged', async () => {
+    const store = useTarkovStore();
+    store.$patch((state) => {
+      state.currentGameMode = 'pvp';
+      state.pvp = {
+        ...state.pvp,
+        taskObjectives: {
+          'objective-1': {
+            complete: true,
+            count: 3,
+            timestamp: 1000,
+          },
+        },
+      };
+    });
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: Date.parse('2026-02-01T00:00:00.000Z'),
+        _userId: 'user-1',
+        data: store.$state,
+      })
+    );
+    single.mockResolvedValue({
+      data: createRemoteRow({
+        pvp_data: {
+          ...progressWithLevel(1),
+          taskObjectives: {
+            'objective-1': {
+              complete: false,
+            },
+          },
+        },
+        updated_at: '2026-02-22T12:00:00.000Z',
+      }),
+      error: null,
+    });
+    await initializeTarkovSync();
+    expect(upsert).not.toHaveBeenCalled();
+    expect(store.pvp.taskObjectives['objective-1']).toEqual({
+      complete: false,
+    });
   });
   it('skips upsert when local and remote progress scores are equal', async () => {
     setLocalProgress(10);

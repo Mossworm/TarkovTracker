@@ -79,6 +79,10 @@ export default defineNuxtPlugin(() => {
         logger.debug(`[Supabase Stub] channel('${channelName}') called in offline mode`);
         return buildStubChannel();
       },
+      async rpc(fnName: string) {
+        logger.debug(`[Supabase Stub] rpc('${fnName}') called in offline mode`);
+        return { data: null, error: null };
+      },
       removeChannel() {
         logger.debug('[Supabase Stub] removeChannel called in offline mode');
       },

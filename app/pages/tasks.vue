@@ -12,6 +12,7 @@
             :active-search-count="activeSearchCount"
             :is-search-active="isSearchActive"
           />
+          <ApiUpdateLogPanel :progress-data="currentModeProgressData" />
           <TaskGraphView v-if="showGraphView" :allowed-task-ids="graphVisibleTaskIds" />
           <template v-else>
             <div v-if="showMapDisplay" ref="mapContainerRef" class="mb-6">
@@ -308,6 +309,7 @@
   import { useTaskNotification } from '@/composables/useTaskNotification';
   import { useTaskRouteSync } from '@/composables/useTaskRouteSync';
   import { useTaskSettingsDrawer } from '@/composables/useTaskSettingsDrawer';
+  import ApiUpdateLogPanel from '@/features/tasks/ApiUpdateLogPanel.vue';
   import { useTaskFilters } from '@/features/tasks/composables/useTaskFilters';
   import { useTasksPageEffects } from '@/features/tasks/composables/useTasksPageEffects';
   import MapTaskVisibilityNotice from '@/features/tasks/MapTaskVisibilityNotice.vue';
@@ -373,6 +375,9 @@
   const { isGlobalTask, visibleTasks, updateVisibleTasks, calculateFilteredTasksForOptions } =
     useTaskFiltering();
   const tarkovStore = useTarkovStore();
+  const currentModeProgressData = computed(() =>
+    tarkovStore.currentGameMode === 'pve' ? tarkovStore.pve : tarkovStore.pvp
+  );
   const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
   const { isOpen: isSettingsDrawerOpen } = useTaskSettingsDrawer();
@@ -802,6 +807,7 @@
     );
   };
   const { checkAndLoadMore } = useInfiniteScroll(loadMoreSentinel, loadMoreTasks, {
+    autoLoadOnReady: false,
     enabled: hasMoreTasks,
     maxAutoLoads: 8,
     rootMargin: '700px',

@@ -57,9 +57,8 @@ export function useTasksPageEffects({
         !oldTasks ||
         newTasks.length !== oldTasks.length ||
         newTasks.some((task, index) => task.id !== oldTasks[index]?.id);
-      if (listChanged) {
-        visibleTaskCount.value = Math.min(batchSize, newTasks.length);
-      }
+      if (!listChanged) return;
+      visibleTaskCount.value = Math.min(batchSize, newTasks.length);
       void nextTick(() => {
         void checkAndLoadMore();
       });
