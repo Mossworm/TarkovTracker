@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.19.2...v1.20.0) (2026-03-07)
+
+
+### Features
+
+* add prestige and sync history support ([b59fbf7](https://github.com/tarkovtracker-org/TarkovTracker/commit/b59fbf7b3a48e664c7111f60ee6af0773eb9eea1))
+
 ## [1.19.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.19.1...v1.19.2) (2026-03-06)
 
 
