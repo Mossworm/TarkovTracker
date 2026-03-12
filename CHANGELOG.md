@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.22.1...v1.23.0) (2026-03-12)
+
+
+### Features
+
+* add dashboard recommendations and task focus improvements ([d97299a](https://github.com/tarkovtracker-org/TarkovTracker/commit/d97299afca9016fd121b9e60744885eb2015dd5d))
+
 ## [1.22.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.22.0...v1.22.1) (2026-03-12)
 
 
