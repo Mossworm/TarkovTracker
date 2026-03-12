@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.22.0...v1.22.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* **ci:** pass analytics env vars to deploys ([518d73f](https://github.com/tarkovtracker-org/TarkovTracker/commit/518d73f008285687ce4e1579a8a19e8c6bc40cf9))
+
 # [1.22.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.21.0...v1.22.0) (2026-03-12)
 
 
