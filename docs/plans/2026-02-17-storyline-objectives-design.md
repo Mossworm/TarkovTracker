@@ -6,7 +6,7 @@ Wire per-chapter objectives from community-sourced data into the overlay, and co
 
 ## Data Sources
 
-- Chapter objectives: [storylineQuests.ts](https://github.com/Wilsman/task-tracker/blob/master/src/data/storylineQuests.ts) (9 chapters, main + optional objectives, descriptions, rewards)
+- Chapter objectives: `Wilsman/task-tracker/src/data/storylineQuests.ts` (9 chapters, main + optional objectives, descriptions, rewards)
 - Existing overlay: `tarkov-data-overlay/src/additions/storyChapters.json5` (9 chapters with metadata only)
 
 ## Overlay Changes (`tarkov-data-overlay`)

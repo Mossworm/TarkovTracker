@@ -15,10 +15,34 @@ describe('i18n-ready plugin', () => {
     localStorage.clear();
     vi.unstubAllGlobals();
   });
-  it('applies a prior user-scoped locale while auth hydration is in progress', async () => {
+  it('ignores a prior user-scoped locale while auth hydration is in progress', async () => {
     localStorage.setItem(
       STORAGE_KEYS.preferences,
       serializeUserScopedStorage({ localeOverride: 'de' }, 'user-1')
+    );
+    localStorage.setItem('sb-test-auth-token', 'token');
+    const setLocale = vi.fn();
+    const plugin = (await import('@/plugins/i18n.client')).default as (
+      nuxtApp: unknown
+    ) => Promise<void>;
+    await plugin({
+      $i18n: {
+        global: {
+          setLocale,
+        },
+      },
+      $supabase: {
+        user: {
+          id: null,
+        },
+      },
+    });
+    expect(setLocale).toHaveBeenCalledWith('en');
+  });
+  it('applies an anonymous scoped locale while auth hydration is in progress', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.preferences,
+      serializeUserScopedStorage({ localeOverride: 'de' }, null)
     );
     localStorage.setItem('sb-test-auth-token', 'token');
     const setLocale = vi.fn();

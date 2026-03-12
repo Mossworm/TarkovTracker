@@ -233,7 +233,7 @@ git commit -m "feat: add objectives, description, notes, rewards to story chapte
 
 **Step 1: Add objectives and metadata to each chapter**
 
-For each of the 9 chapters, add `description`, `notes`, `objectives`, and `rewards` fields. The data comes from the community source at `https://github.com/Wilsman/task-tracker/blob/master/src/data/storylineQuests.ts`.
+For each of the 9 chapters, add `description`, `notes`, `objectives`, and `rewards` fields. The data comes from the community source file `Wilsman/task-tracker/src/data/storylineQuests.ts`.
 
 Here is the complete updated file content. Objectives are ordered main-first, then optional, matching the community source:
 
@@ -242,7 +242,7 @@ Here is the complete updated file content. Objectives are ordered main-first, th
   // Tour
   // The introductory story chapter, automatically available on game start.
   // Source: https://escapefromtarkov.fandom.com/wiki/Tour
-  // Objectives: https://github.com/Wilsman/task-tracker/blob/master/src/data/storylineQuests.ts
+  // Objectives source: Wilsman/task-tracker/src/data/storylineQuests.ts
   tour: {
     id: 'tour',
     name: 'Tour',
