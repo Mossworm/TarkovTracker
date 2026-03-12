@@ -54,6 +54,9 @@ describe('Overlay Kappa Route', () => {
   it('renders html with default overlay config', async () => {
     const { default: handler } = await import('@/server/routes/overlay/kappa/[userId]/[mode].get');
     const html = await handler(mockEvent as H3Event);
+    const cspHeader = mockSetResponseHeader.mock.calls.find(
+      ([, name]) => name === 'Content-Security-Policy'
+    )?.[2];
     expect(mockSetHeader).toHaveBeenCalledWith(
       mockEvent,
       'Content-Type',
@@ -64,7 +67,14 @@ describe('Overlay Kappa Route', () => {
       'Cache-Control',
       'no-store, max-age=0'
     );
+    expect(cspHeader).toContain("script-src 'unsafe-inline'");
+    expect(cspHeader).toContain("frame-ancestors 'self'");
+    expect(cspHeader).toContain('https://fonts.googleapis.com');
     expect(html).toContain('<title>TarkovTracker Stream Overlay</title>');
+    expect(html).toContain('<link rel="preconnect" href="https://fonts.googleapis.com" />');
+    expect(html).toContain(
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />'
+    );
     expect(html).toContain('"align":"bottom-left"');
     expect(html).toContain('"container":"canvas"');
     expect(html).toContain('"trackOpacity":20');

@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n';
 import { logger } from '@/utils/logger';
+import { parseBootstrapPreferencesState } from '@/utils/preferencesStorage';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 // Global flag to track i18n readiness
 let i18nReady = false;
@@ -44,7 +45,8 @@ function getSavedLocale(): string | null {
     // that can occur in some browsers (e.g., Safari private browsing)
     const savedPrefs = window.localStorage?.getItem(STORAGE_KEYS.preferences);
     if (savedPrefs) {
-      return JSON.parse(savedPrefs)?.localeOverride ?? null;
+      const prefs = parseBootstrapPreferencesState(savedPrefs);
+      return typeof prefs?.localeOverride === 'string' ? prefs.localeOverride : null;
     }
   } catch (error) {
     logger.warn('[i18nHelpers] Failed to read locale from localStorage:', error);

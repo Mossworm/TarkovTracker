@@ -7,7 +7,9 @@
 - `SUPABASE_SERVICE_ROLE_KEY` (or `SB_SERVICE_ROLE_KEY`) for server profile/team routes
 - `NUXT_PUBLIC_APP_URL`
 - `API_ALLOWED_HOSTS` (production host allowlist)
-- `API_TRUST_PROXY=true` when running behind Cloudflare
+- `API_TRUST_PROXY` only when overriding proxy auto-detection (forwarded headers are trusted
+  only when `API_TRUST_PROXY=true` or `NITRO_PRESET` is explicitly set to a `cloudflare*`
+  preset)
 
 ## Optional Environment Variables
 

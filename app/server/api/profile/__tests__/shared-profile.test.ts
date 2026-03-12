@@ -9,6 +9,9 @@ const { mockGetRequestHeader, mockGetRouterParam, mockFetch } = vi.hoisted(() =>
   mockFetch: vi.fn(),
 }));
 const runtimeConfig = {
+  apiProtection: {
+    trustProxy: false,
+  },
   sharedProfileCacheTtlMs: 5000,
   sharedProfileRateLimitPerMinute: 120,
   supabaseAnonKey: 'anon-key',
@@ -51,6 +54,7 @@ describe('Shared Profile API', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch as typeof fetch);
     vi.clearAllMocks();
+    runtimeConfig.apiProtection.trustProxy = false;
     runtimeConfig.sharedProfileCacheTtlMs = 5000;
     runtimeConfig.sharedProfileRateLimitPerMinute = 120;
     runtimeConfig.supabaseAnonKey = 'anon-key';
@@ -99,6 +103,46 @@ describe('Shared Profile API', () => {
       statusCode: 500,
       statusMessage: 'Missing Supabase configuration for shared profiles',
     });
+  });
+  it('serves shared profiles in production mode', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    vi.resetModules();
+    try {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [
+            {
+              game_edition: 4,
+              pve_data: { level: 1 },
+              pvp_data: { displayName: 'PublicPlayer', level: 24 },
+              user_id: '11111111-1111-4111-8111-111111111111',
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [
+            {
+              profile_share_pvp_public: true,
+              profile_share_pve_public: false,
+              streamer_mode: false,
+            },
+          ],
+        });
+      const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+      await expect(handler(mockEvent as H3Event)).resolves.toEqual({
+        data: { displayName: 'PublicPlayer', level: 24 },
+        gameEdition: 4,
+        mode: 'pvp',
+        userId: '11111111-1111-4111-8111-111111111111',
+        visibility: 'public',
+      });
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+      vi.resetModules();
+    }
   });
   it('returns 504 when auth context resolution times out', async () => {
     runtimeConfig.supabaseServiceKey = '';

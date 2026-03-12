@@ -7,6 +7,7 @@ import {
   setResponseHeader,
 } from 'h3';
 import { GAME_MODES, type GameMode } from '@/utils/constants';
+import { buildOverlayContentSecurityPolicy } from '@/utils/csp';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 type OverlayMetric = 'items' | 'summary' | 'tasks';
 type OverlayAccent = 'custom' | 'info' | 'kappa' | 'success' | 'warning';
@@ -351,6 +352,11 @@ export default defineEventHandler((event) => {
   const fontHref = resolvedFont.href;
   setHeader(event, 'Content-Type', 'text/html; charset=utf-8');
   setResponseHeader(event, 'Cache-Control', 'no-store, max-age=0');
+  setResponseHeader(
+    event,
+    'Content-Security-Policy',
+    buildOverlayContentSecurityPolicy({ allowUnsafeInlineScripts: true })
+  );
   return `<!doctype html>
 <html lang="en">
   <head>

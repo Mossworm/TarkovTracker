@@ -1,17 +1,31 @@
 import { markI18nReady } from '@/composables/i18nHelpers';
+import { hasSupabaseAuthSessionHint } from '@/utils/clientStorage';
 import { isSupportedLocale } from '@/utils/locales';
 import { logger } from '@/utils/logger';
+import { parseBootstrapPreferencesState } from '@/utils/preferencesStorage';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import type { SupportedLocale } from '@/utils/locales';
 import type { Composer, I18n } from 'vue-i18n';
-function getInitialLocale(): SupportedLocale {
+type BootstrapSupabaseContext = {
+  user?: {
+    id: string | null;
+  };
+};
+function getInitialLocale(supabase?: BootstrapSupabaseContext): SupportedLocale {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       const savedPrefs = window.localStorage.getItem(STORAGE_KEYS.preferences);
       if (savedPrefs) {
-        const prefs = JSON.parse(savedPrefs);
-        if (prefs.localeOverride && isSupportedLocale(prefs.localeOverride)) {
-          return prefs.localeOverride;
+        const expectedUserId = supabase?.user?.id ?? null;
+        const prefs = parseBootstrapPreferencesState(savedPrefs, {
+          allowScopedStateDuringSessionHydration:
+            expectedUserId === null && hasSupabaseAuthSessionHint(),
+          expectedUserId,
+        });
+        const localeOverride =
+          typeof prefs?.localeOverride === 'string' ? prefs.localeOverride : null;
+        if (localeOverride && isSupportedLocale(localeOverride)) {
+          return localeOverride;
         }
       }
     } catch (error) {
@@ -48,12 +62,13 @@ export default defineNuxtPlugin({
   enforce: 'post',
   async setup(nuxtApp) {
     const i18n = (nuxtApp as { $i18n?: I18n | Composer }).$i18n;
+    const supabase = (nuxtApp as { $supabase?: BootstrapSupabaseContext }).$supabase;
     if (!i18n) {
       logger.warn('[i18n] Missing i18n instance on nuxtApp; skipping locale init.');
       markI18nReady();
       return;
     }
-    const initialLocale = getInitialLocale();
+    const initialLocale = getInitialLocale(supabase);
     try {
       if (!(await setI18nLocale(i18n, initialLocale))) {
         logger.warn('[i18n] Failed to set locale on i18n instance; skipping locale init.');

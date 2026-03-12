@@ -1,12 +1,12 @@
 <script setup lang="ts">
-  // Page metadata
   useSeoMeta({
     title: 'Terms of Service',
     description: 'TarkovTracker terms of service and usage guidelines.',
   });
-  const lastUpdated = 'November 28, 2025';
+  const lastUpdated = 'March 8, 2026';
+  const ACTIVE_SECTION_OFFSET = 160;
   const toc = [
-    { id: 'top', title: '1. Acceptance of Terms' },
+    { id: 'acceptance', title: '1. Acceptance of Terms' },
     { id: 'eligibility', title: '2. Eligibility and Account Requirements' },
     { id: 'service', title: '3. Service Description and Scope' },
     { id: 'non-affiliation', title: '4. Non-Affiliation and Trademark Disclaimer' },
@@ -24,8 +24,33 @@
     { id: 'contact', title: '16. Contact Information' },
     { id: 'acknowledgment', title: '17. Acknowledgment' },
   ];
-  const activeId = ref(toc[0]?.id || 'top');
-  let observer: IntersectionObserver | null = null;
+  const activeId = ref(toc[0]?.id || 'acceptance');
+  let scrollRoot: HTMLElement | null = null;
+  let updateActiveIdFrameId: number | null = null;
+  const updateActiveId = () => {
+    const currentScrollTop = scrollRoot?.scrollTop ?? window.scrollY;
+    const rootTop = scrollRoot?.getBoundingClientRect().top ?? 0;
+    activeId.value =
+      [...toc].reverse().find((item) => {
+        const section = document.getElementById(item.id);
+        if (!section) {
+          return false;
+        }
+        const sectionTop = section.getBoundingClientRect().top - rootTop + currentScrollTop;
+        return currentScrollTop + ACTIVE_SECTION_OFFSET >= sectionTop;
+      })?.id ||
+      toc[0]?.id ||
+      'acceptance';
+  };
+  const scheduleUpdateActiveId = () => {
+    if (updateActiveIdFrameId !== null) {
+      return;
+    }
+    updateActiveIdFrameId = window.requestAnimationFrame(() => {
+      updateActiveIdFrameId = null;
+      updateActiveId();
+    });
+  };
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -33,24 +58,26 @@
     activeId.value = id;
   };
   onMounted(() => {
-    observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) activeId.value = entry.target.id;
-        });
-      },
-      {
-        rootMargin: '-30% 0px -60% 0px',
-        threshold: 0.1,
-      }
-    );
-    toc.forEach((item) => {
-      const section = document.getElementById(item.id);
-      if (section) observer?.observe(section);
-    });
+    const rootCandidate = document.getElementById('main-content')?.firstElementChild;
+    scrollRoot = rootCandidate instanceof HTMLElement ? rootCandidate : null;
+    updateActiveId();
+    if (scrollRoot) {
+      scrollRoot.addEventListener('scroll', scheduleUpdateActiveId, { passive: true });
+    } else {
+      window.addEventListener('scroll', scheduleUpdateActiveId, { passive: true });
+    }
+    window.addEventListener('resize', updateActiveId, { passive: true });
   });
   onBeforeUnmount(() => {
-    observer?.disconnect();
+    if (scrollRoot) {
+      scrollRoot.removeEventListener('scroll', scheduleUpdateActiveId);
+    } else {
+      window.removeEventListener('scroll', scheduleUpdateActiveId);
+    }
+    if (updateActiveIdFrameId !== null) {
+      window.cancelAnimationFrame(updateActiveIdFrameId);
+    }
+    window.removeEventListener('resize', updateActiveId);
   });
 </script>
 <template>
@@ -375,7 +402,10 @@
                   Team collaboration data (team memberships, shared progress)
                 </li>
                 <li class="leading-relaxed">API tokens and access credentials for team features</li>
-                <li class="leading-relaxed">Usage analytics and diagnostic information</li>
+                <li class="leading-relaxed">
+                  Usage analytics and diagnostic information, including Google Analytics and
+                  Microsoft Clarity data if you opt in to optional analytics
+                </li>
               </ul>
               <h3 class="mt-6 mb-3 text-xl font-semibold">7.2 Data Storage and Security</h3>
               <p class="mb-4 leading-relaxed">
@@ -395,8 +425,9 @@
               <p class="leading-relaxed">
                 We do not sell, rent, or trade your personal information to third parties for
                 marketing purposes. Data may be shared with service providers (Supabase, Cloudflare,
-                OAuth providers) as necessary to operate the Service, and may be disclosed if
-                required by law or to protect our rights.
+                Google Analytics, Microsoft Clarity, OAuth providers) as necessary to operate the
+                Service and, where applicable, only after your consent to optional analytics. Data
+                may also be disclosed if required by law or to protect our rights.
               </p>
             </section>
             <!-- 8. THIRD-PARTY SERVICES -->
@@ -421,6 +452,14 @@
                   Discord, Google, and other third-party authentication services
                 </li>
                 <li class="leading-relaxed">
+                  <strong>Google Analytics:</strong>
+                  Optional website analytics and product improvement measurement
+                </li>
+                <li class="leading-relaxed">
+                  <strong>Microsoft Clarity:</strong>
+                  Optional website analytics, session replay, and product improvement measurement
+                </li>
+                <li class="leading-relaxed">
                   <strong>tarkov.dev API:</strong>
                   Game data and content aggregation
                 </li>
@@ -435,6 +474,10 @@
                 statements of these third-party providers. You are responsible for reviewing and
                 complying with such third-party terms. We are not responsible for the practices,
                 policies, or actions of any third-party service.
+              </p>
+              <p class="mb-4 leading-relaxed">
+                If we add advertising or other monetization services in the future, additional
+                third-party terms, notices, or consent requests may apply.
               </p>
               <h3 class="mt-6 mb-3 text-xl font-semibold">8.3 Service Availability</h3>
               <p class="leading-relaxed">

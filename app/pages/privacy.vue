@@ -3,7 +3,7 @@
     <div class="prose prose-gray dark:prose-invert mx-auto max-w-4xl">
       <h1 class="mb-2 text-4xl font-bold">Privacy Policy</h1>
       <p class="text-surface-500 dark:text-surface-400 mb-12 text-sm">
-        Last Updated: November 28, 2025
+        Last Updated: March 8, 2026
       </p>
       <div class="space-y-12">
         <!-- INTRODUCTION -->
@@ -85,10 +85,23 @@
             </li>
             <li class="leading-relaxed">
               <strong>Cookies and Similar Technologies:</strong>
-              Session identifiers, authentication tokens, and preference settings stored locally in
-              your browser
+              Session identifiers, authentication tokens, preference settings, and, if you allow
+              analytics, analytics cookies or similar browser storage
+            </li>
+            <li class="leading-relaxed">
+              <strong>Analytics Data:</strong>
+              If you opt in to analytics, Google Analytics and Microsoft Clarity may collect page
+              views, approximate location, device and browser details, referral information, clicks,
+              scroll behavior, session replay data, and engagement metrics to help us understand how
+              the Service is used
             </li>
           </ul>
+          <p class="leading-relaxed">
+            Your analytics preference applies to Google Analytics and Microsoft Clarity. If we
+            introduce advertising or other monetization technologies in the future, we will update
+            this Privacy Policy and request any additional consent required before enabling those
+            services where applicable.
+          </p>
           <h3 class="mt-6 mb-3 text-xl font-semibold">2.3 Information from Third-Party Sources</h3>
           <p class="mb-4 leading-relaxed">
             We receive information from third-party services you choose to connect with:
@@ -136,7 +149,8 @@
             <li class="leading-relaxed">
               <strong>Analytics & Improvement:</strong>
               To analyze usage patterns, identify bugs, understand feature adoption, and improve
-              Service performance
+              Service performance, including through Google Analytics and Microsoft Clarity when you
+              consent to optional analytics collection
             </li>
             <li class="leading-relaxed">
               <strong>Legal Compliance:</strong>
@@ -256,6 +270,11 @@
             <li class="leading-relaxed">
               <strong>Cloudflare:</strong>
               Web hosting, CDN, DDoS protection, and performance optimization
+            </li>
+            <li class="leading-relaxed">
+              <strong>Google Analytics and Microsoft Clarity:</strong>
+              Website analytics tools used to measure usage trends and improve the Service, subject
+              to your analytics consent choice
             </li>
             <li class="leading-relaxed">
               <strong>OAuth Providers:</strong>
@@ -397,13 +416,18 @@
           <p class="mb-4 leading-relaxed">You can control cookies through:</p>
           <ul class="mb-4 ml-6 list-disc space-y-2">
             <li class="leading-relaxed">
+              The Analytics Preferences control in the site footer, which lets you allow or decline
+              Google Analytics and Microsoft Clarity on this browser
+            </li>
+            <li class="leading-relaxed">
               Your browser settings (most browsers allow you to refuse or delete cookies)
             </li>
             <li class="leading-relaxed">Clearing your browser cache and local storage</li>
           </ul>
           <p class="mb-4 leading-relaxed">
-            Note: Disabling cookies may impact Service functionality, particularly authentication
-            and session management.
+            Note: Declining analytics will not disable core tracking features of the Service, but
+            blocking essential cookies or local storage may impact authentication, preferences, and
+            session management.
           </p>
           <h3 class="mt-6 mb-3 text-xl font-semibold">7.5 Regional Privacy Rights</h3>
           <p class="mb-4 leading-relaxed">
@@ -489,7 +513,7 @@
               </a>
             </li>
             <li class="leading-relaxed">
-              <strong>Google:</strong>
+              <strong>Google / Google Analytics:</strong>
               <a
                 href="https://policies.google.com/privacy"
                 target="_blank"
@@ -499,10 +523,26 @@
                 policies.google.com/privacy
               </a>
             </li>
+            <li class="leading-relaxed">
+              <strong>Microsoft / Microsoft Clarity:</strong>
+              <a
+                href="https://privacy.microsoft.com/en-us/privacystatement"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-link hover:text-link-hover underline"
+              >
+                privacy.microsoft.com/en-us/privacystatement
+              </a>
+            </li>
           </ul>
           <p class="mb-4 leading-relaxed">
             We are not responsible for the privacy practices of these third-party services. We
             encourage you to review their privacy policies before using them.
+          </p>
+          <p class="mb-4 leading-relaxed">
+            If analytics is enabled, Google and Microsoft may process analytics data according to
+            your consent choices and their own policies. You can change your analytics preference at
+            any time from the site footer.
           </p>
           <h3 class="mt-6 mb-3 text-xl font-semibold">9.2 External Links</h3>
           <p class="leading-relaxed">
@@ -750,7 +790,6 @@
   </UContainer>
 </template>
 <script setup lang="ts">
-  // Page metadata
   useSeoMeta({
     title: 'Privacy Policy',
     description: 'TarkovTracker privacy policy and data handling practices.',

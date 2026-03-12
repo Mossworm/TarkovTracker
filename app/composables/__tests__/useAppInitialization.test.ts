@@ -20,7 +20,7 @@ const mockSupabase = {
   user: mockSupabaseUser,
 };
 const mockInitializeTarkovSync = vi.fn(async () => {});
-const mockResetTarkovSync = vi.fn();
+const mockResetTarkovStoreForSessionTransition = vi.fn();
 const mockMigrateDataIfNeeded = vi.fn(async () => {});
 vi.mock('vue-i18n', async (importOriginal) => ({
   ...(await importOriginal<typeof import('vue-i18n')>()),
@@ -47,7 +47,8 @@ vi.mock('@/composables/useToastI18n', () => ({
 }));
 vi.mock('@/stores/useTarkov', () => ({
   initializeTarkovSync: () => mockInitializeTarkovSync(),
-  resetTarkovSync: (...args: unknown[]) => mockResetTarkovSync(...args),
+  resetTarkovStoreForSessionTransition: (...args: unknown[]) =>
+    mockResetTarkovStoreForSessionTransition(...args),
   useTarkovStore: () => ({
     migrateDataIfNeeded: () => mockMigrateDataIfNeeded(),
   }),
@@ -74,7 +75,7 @@ describe('useAppInitialization locale setup', () => {
     mockPreferencesStore.localeOverride = 'de';
     mockInitializeTarkovSync.mockClear();
     mockInitializeTarkovSync.mockResolvedValue(undefined);
-    mockResetTarkovSync.mockClear();
+    mockResetTarkovStoreForSessionTransition.mockClear();
     mockMigrateDataIfNeeded.mockClear();
     mockMigrateDataIfNeeded.mockResolvedValue(undefined);
     mockShowLoadFailed.mockClear();
@@ -139,6 +140,36 @@ describe('useAppInitialization locale setup', () => {
     expect(mockMigrateDataIfNeeded).not.toHaveBeenCalled();
     mockSupabaseUser.id = 'user-1';
     await flushPromises();
+    expect(mockInitializeTarkovSync).toHaveBeenCalledTimes(1);
+    expect(mockMigrateDataIfNeeded).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+  it('resets in-memory progress after logout', async () => {
+    mockSupabaseUser.loggedIn = true;
+    mockSupabaseUser.id = 'user-1';
+    const wrapper = await mountWithComposable();
+    await flushPromises();
+    mockResetTarkovStoreForSessionTransition.mockClear();
+    mockSupabaseUser.loggedIn = false;
+    mockSupabaseUser.id = null;
+    await flushPromises();
+    expect(mockResetTarkovStoreForSessionTransition).toHaveBeenCalledWith('user-1', 'logout');
+    wrapper.unmount();
+  });
+  it('preserves the previous user snapshot before resetting on account switch', async () => {
+    mockSupabaseUser.loggedIn = true;
+    mockSupabaseUser.id = 'user-1';
+    const wrapper = await mountWithComposable();
+    await flushPromises();
+    mockResetTarkovStoreForSessionTransition.mockClear();
+    mockInitializeTarkovSync.mockClear();
+    mockMigrateDataIfNeeded.mockClear();
+    mockSupabaseUser.id = 'user-2';
+    await flushPromises();
+    expect(mockResetTarkovStoreForSessionTransition).toHaveBeenCalledWith(
+      'user-1',
+      'user switched'
+    );
     expect(mockInitializeTarkovSync).toHaveBeenCalledTimes(1);
     expect(mockMigrateDataIfNeeded).toHaveBeenCalledTimes(1);
     wrapper.unmount();

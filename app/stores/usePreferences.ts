@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import 'pinia-plugin-persistedstate';
+import { clearPreferencesStorage } from '@/utils/clientStorage';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
@@ -10,6 +11,11 @@ import {
   type MapMarkerColorKey,
   type MapMarkerColors,
 } from '@/utils/theme-colors';
+import {
+  getCurrentSupabaseUserId,
+  parseUserScopedStorage,
+  serializeUserScopedStorage,
+} from '@/utils/userScopedStorage';
 import type {
   NeededItemsFirFilter,
   NeededItemsFilterType,
@@ -211,29 +217,156 @@ const initialSavingState = {
   hideCompletedMapObjectives: false,
   itemsNeededHideNonFIR: false,
 };
+export type PersistedPreferencesState = Partial<Omit<PreferencesState, 'saving'>>;
+type PersistedPreferencesStateWithLegacy = PersistedPreferencesState & {
+  onlyTasksWithSuggestedKeys?: boolean;
+};
+const hasLegacyOnlyTasksWithSuggestedKeys = (
+  persistedState: PersistedPreferencesStateWithLegacy
+): boolean => {
+  return 'onlyTasksWithSuggestedKeys' in persistedState;
+};
+const sanitizePersistedPreferencesState = (
+  persistedState: PersistedPreferencesStateWithLegacy = {}
+): PersistedPreferencesState => {
+  const sanitizedState = structuredClone(persistedState) as PersistedPreferencesStateWithLegacy;
+  if (
+    typeof sanitizedState.onlyTasksWithRequiredKeys !== 'boolean' &&
+    typeof sanitizedState.onlyTasksWithSuggestedKeys === 'boolean'
+  ) {
+    sanitizedState.onlyTasksWithRequiredKeys = sanitizedState.onlyTasksWithSuggestedKeys;
+  }
+  if ('onlyTasksWithSuggestedKeys' in sanitizedState) {
+    delete sanitizedState.onlyTasksWithSuggestedKeys;
+  }
+  return sanitizedState;
+};
+const isPersistedPreferencesStateRecord = (value: unknown): value is PersistedPreferencesState => {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+};
+const parseLegacyPersistedPreferencesState = (
+  rawPersistedState: string
+): PersistedPreferencesState | null => {
+  try {
+    const parsed = JSON.parse(rawPersistedState) as unknown;
+    return isPersistedPreferencesStateRecord(parsed) ? parsed : null;
+  } catch (error) {
+    logger.warn('[PreferencesStore] Failed to parse local preferences:', error);
+    return null;
+  }
+};
+export type PersistedPreferencesSnapshot = {
+  ownerUserId: string | null;
+  state: PersistedPreferencesState;
+  requiresStorageMigration?: boolean;
+};
+let pendingResetPreferencesSnapshot: PersistedPreferencesSnapshot | null = null;
+export const getPersistedPreferencesState = (
+  state: Partial<PreferencesState>
+): PersistedPreferencesState => {
+  const clonedState = structuredClone(state) as PersistedPreferencesStateWithLegacy;
+  if ('saving' in clonedState) {
+    delete clonedState.saving;
+  }
+  return sanitizePersistedPreferencesState(clonedState);
+};
+const buildPreferencesState = (
+  persistedState: PersistedPreferencesStateWithLegacy = {}
+): PreferencesState => {
+  const state = structuredClone(preferencesDefaultState);
+  Object.assign(state, sanitizePersistedPreferencesState(persistedState));
+  state.mapMarkerColors = normalizeMapMarkerColors(state.mapMarkerColors);
+  state.saving = { ...initialSavingState };
+  return state;
+};
+const replacePreferencesState = (state: PreferencesState, nextState: PreferencesState): void => {
+  for (const key of Object.keys(state) as (keyof PreferencesState)[]) {
+    Reflect.deleteProperty(state, key);
+  }
+  Object.assign(state, nextState);
+};
+export const readPersistedPreferencesSnapshot = (
+  userId: string | null = getCurrentSupabaseUserId()
+): PersistedPreferencesSnapshot | null => {
+  if (!import.meta.client) {
+    return null;
+  }
+  let rawPersistedState: string | null = null;
+  try {
+    rawPersistedState = localStorage.getItem(STORAGE_KEYS.preferences);
+  } catch (error) {
+    logger.warn('[PreferencesStore] Failed to access local preferences:', error);
+    return null;
+  }
+  if (!rawPersistedState) {
+    return null;
+  }
+  const wrapped = parseUserScopedStorage<Record<string, unknown>>(rawPersistedState);
+  if (wrapped) {
+    if (wrapped._userId !== userId || !isPersistedPreferencesStateRecord(wrapped.data)) {
+      return null;
+    }
+    const requiresStorageMigration = hasLegacyOnlyTasksWithSuggestedKeys(
+      wrapped.data as PersistedPreferencesStateWithLegacy
+    );
+    return {
+      ownerUserId: wrapped._userId,
+      state: sanitizePersistedPreferencesState(wrapped.data as PersistedPreferencesStateWithLegacy),
+      requiresStorageMigration: requiresStorageMigration || undefined,
+    };
+  }
+  const legacyState = parseLegacyPersistedPreferencesState(rawPersistedState);
+  if (!legacyState) {
+    return null;
+  }
+  return {
+    ownerUserId: userId,
+    state: sanitizePersistedPreferencesState(legacyState),
+    requiresStorageMigration: true,
+  };
+};
+export const readPendingResetPreferencesSnapshot = (
+  userId: string | null
+): PersistedPreferencesSnapshot | null => {
+  if (pendingResetPreferencesSnapshot?.ownerUserId !== userId) {
+    return null;
+  }
+  return {
+    ownerUserId: pendingResetPreferencesSnapshot.ownerUserId,
+    state: getPersistedPreferencesState(pendingResetPreferencesSnapshot.state),
+  };
+};
+export const clearPendingResetPreferencesSnapshot = (userId?: string | null): void => {
+  if (userId === undefined || pendingResetPreferencesSnapshot?.ownerUserId === userId) {
+    pendingResetPreferencesSnapshot = null;
+  }
+};
 export const usePreferencesStore = defineStore('preferences', {
   state: (): PreferencesState => {
-    const state = structuredClone(preferencesDefaultState);
+    const persistedSnapshot = import.meta.client ? readPersistedPreferencesSnapshot() : null;
+    const persistedState: PersistedPreferencesState = persistedSnapshot
+      ? getPersistedPreferencesState(persistedSnapshot.state)
+      : {};
+    const state = buildPreferencesState(persistedState);
     if (import.meta.client) {
       try {
-        const rawPersistedState = localStorage.getItem(STORAGE_KEYS.preferences);
-        if (rawPersistedState) {
-          const persistedState = JSON.parse(rawPersistedState) as Record<string, unknown>;
-          if (
-            typeof persistedState.onlyTasksWithRequiredKeys !== 'boolean' &&
-            typeof persistedState.onlyTasksWithSuggestedKeys === 'boolean'
-          ) {
-            state.onlyTasksWithRequiredKeys = persistedState.onlyTasksWithSuggestedKeys;
-          }
+        if (persistedSnapshot) {
+          let shouldPersistMigratedState = persistedSnapshot.requiresStorageMigration === true;
           if ('mapMarkerColors' in persistedState) {
             const migratedMapColors = migrateLegacyMapMarkerColors(persistedState.mapMarkerColors);
             if (migratedMapColors) {
               state.mapMarkerColors = migratedMapColors;
               persistedState.mapMarkerColors = migratedMapColors;
-              localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(persistedState));
+              shouldPersistMigratedState = true;
             } else {
               state.mapMarkerColors = normalizeMapMarkerColors(persistedState.mapMarkerColors);
             }
+          }
+          if (shouldPersistMigratedState) {
+            localStorage.setItem(
+              STORAGE_KEYS.preferences,
+              serializeUserScopedStorage(persistedState, persistedSnapshot.ownerUserId)
+            );
           }
         }
       } catch (_error) {
@@ -463,6 +596,16 @@ export const usePreferencesStore = defineStore('preferences', {
     },
   },
   actions: {
+    resetToDefaults() {
+      this.$patch((state) => {
+        replacePreferencesState(state, buildPreferencesState());
+      });
+    },
+    replacePersistedState(state: PersistedPreferencesState) {
+      this.$patch((currentState) => {
+        replacePreferencesState(currentState, buildPreferencesState(state));
+      });
+    },
     setStreamerMode(mode: boolean) {
       this.streamerMode = mode;
     },
@@ -726,8 +869,25 @@ export const usePreferencesStore = defineStore('preferences', {
     storage: typeof window !== 'undefined' ? localStorage : undefined,
     // Use serializer instead of paths for selective persistence
     serializer: {
-      serialize: JSON.stringify,
-      deserialize: JSON.parse,
+      serialize: (value) => serializeUserScopedStorage(value),
+      deserialize: (value) => {
+        const currentUserId = getCurrentSupabaseUserId();
+        const wrapped = parseUserScopedStorage<Record<string, unknown>>(value);
+        if (wrapped) {
+          if (
+            wrapped._userId !== currentUserId ||
+            !isPersistedPreferencesStateRecord(wrapped.data)
+          ) {
+            return {};
+          }
+          return wrapped.data;
+        }
+        const legacyState = parseLegacyPersistedPreferencesState(value);
+        if (!legacyState) {
+          return {};
+        }
+        return legacyState;
+      },
     },
     // Pick specific properties to persist (excluding transient state)
     pick: [
@@ -801,5 +961,50 @@ export const usePreferencesStore = defineStore('preferences', {
     ],
   },
 });
+const getPreservedPreferencesStorageValue = (previousUserId: string | null): string | null => {
+  if (!import.meta.client || !previousUserId || getCurrentSupabaseUserId() !== null) {
+    return null;
+  }
+  let rawPersistedState: string | null = null;
+  try {
+    rawPersistedState = localStorage.getItem(STORAGE_KEYS.preferences);
+  } catch (error) {
+    logger.warn('[PreferencesStore] Failed to access local preferences:', error);
+    return null;
+  }
+  if (!rawPersistedState) {
+    return null;
+  }
+  const wrapped = parseUserScopedStorage<Record<string, unknown>>(rawPersistedState);
+  if (wrapped?._userId !== previousUserId) {
+    return null;
+  }
+  if (!isPersistedPreferencesStateRecord(wrapped.data)) {
+    return rawPersistedState;
+  }
+  return serializeUserScopedStorage(
+    sanitizePersistedPreferencesState(wrapped.data as PersistedPreferencesStateWithLegacy),
+    wrapped._userId,
+    wrapped._timestamp
+  );
+};
+export const resetPreferencesStoreForSessionTransition = (
+  previousUserId: string | null = null
+): void => {
+  const preferencesStore = usePreferencesStore();
+  const preservedState = getPreservedPreferencesStorageValue(previousUserId);
+  pendingResetPreferencesSnapshot = previousUserId
+    ? readPersistedPreferencesSnapshot(previousUserId)
+    : null;
+  preferencesStore.resetToDefaults();
+  if (!import.meta.client) {
+    return;
+  }
+  if (preservedState) {
+    localStorage.setItem(STORAGE_KEYS.preferences, preservedState);
+    return;
+  }
+  clearPreferencesStorage();
+};
 export type PreferencesStore = ReturnType<typeof usePreferencesStore>;
 export type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';

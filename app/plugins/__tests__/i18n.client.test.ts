@@ -1,0 +1,88 @@
+// @vitest-environment happy-dom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { STORAGE_KEYS } from '@/utils/storageKeys';
+import { serializeUserScopedStorage } from '@/utils/userScopedStorage';
+describe('i18n-ready plugin', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    localStorage.clear();
+    Object.defineProperty(window.navigator, 'language', {
+      configurable: true,
+      value: 'en-US',
+    });
+  });
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+  it('applies a prior user-scoped locale while auth hydration is in progress', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.preferences,
+      serializeUserScopedStorage({ localeOverride: 'de' }, 'user-1')
+    );
+    localStorage.setItem('sb-test-auth-token', 'token');
+    const setLocale = vi.fn();
+    const plugin = (await import('@/plugins/i18n.client')).default as (
+      nuxtApp: unknown
+    ) => Promise<void>;
+    await plugin({
+      $i18n: {
+        global: {
+          setLocale,
+        },
+      },
+      $supabase: {
+        user: {
+          id: null,
+        },
+      },
+    });
+    expect(setLocale).toHaveBeenCalledWith('de');
+  });
+  it('does not apply a prior user-scoped locale when no session is hydrating', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.preferences,
+      serializeUserScopedStorage({ localeOverride: 'de' }, 'user-1')
+    );
+    const setLocale = vi.fn();
+    const plugin = (await import('@/plugins/i18n.client')).default as (
+      nuxtApp: unknown
+    ) => Promise<void>;
+    await plugin({
+      $i18n: {
+        global: {
+          setLocale,
+        },
+      },
+      $supabase: {
+        user: {
+          id: null,
+        },
+      },
+    });
+    expect(setLocale).toHaveBeenCalledWith('en');
+  });
+  it('applies a prior user-scoped locale once the matching user is known', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.preferences,
+      serializeUserScopedStorage({ localeOverride: 'de' }, 'user-1')
+    );
+    const setLocale = vi.fn();
+    const plugin = (await import('@/plugins/i18n.client')).default as (
+      nuxtApp: unknown
+    ) => Promise<void>;
+    await plugin({
+      $i18n: {
+        global: {
+          setLocale,
+        },
+      },
+      $supabase: {
+        user: {
+          id: 'user-1',
+        },
+      },
+    });
+    expect(setLocale).toHaveBeenCalledWith('de');
+  });
+});

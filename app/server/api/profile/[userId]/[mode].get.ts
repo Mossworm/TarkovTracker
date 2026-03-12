@@ -4,9 +4,9 @@ import {
   getRequestHeader,
   getRouterParam,
   setResponseHeader,
-  type H3Event,
 } from 'h3';
 import { createLogger } from '@/server/utils/logger';
+import { getProxyAwareClientIdentifier } from '@/server/utils/requestIdentity';
 import {
   consumeSharedRateLimit,
   createSharedCacheHandle,
@@ -27,6 +27,7 @@ import {
   sanitizeTraderMap,
   toFiniteNumber,
 } from '@/utils/progressSanitizers';
+import type { ApiProtectionConfig } from '@/server/middleware/api-protection';
 const logger = createLogger('SharedProfileApi');
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REST_FETCH_TIMEOUT_MS = 8000;
@@ -53,7 +54,6 @@ const TASK_FAILURE_METADATA_QUERY = `
   }
 `;
 const isTestEnvironment = process.env.NODE_ENV === 'test';
-const isProductionEnvironment = process.env.NODE_ENV === 'production';
 type TaskFailureObjective = {
   __typename?: string | null;
   status?: string[] | null;
@@ -502,24 +502,6 @@ const setCachedProfile = async (
     }
   );
 };
-const getClientIdentifier = (event: H3Event): string => {
-  const forwardedFor = getRequestHeader(event, 'x-forwarded-for');
-  if (typeof forwardedFor === 'string' && forwardedFor.trim().length > 0) {
-    const token = forwardedFor.split(',')[0]?.trim();
-    if (token) {
-      return token.slice(0, 128);
-    }
-  }
-  const cfConnectingIp = getRequestHeader(event, 'cf-connecting-ip');
-  if (typeof cfConnectingIp === 'string' && cfConnectingIp.trim().length > 0) {
-    return cfConnectingIp.trim().slice(0, 128);
-  }
-  const remoteAddress = event.node?.req?.socket?.remoteAddress;
-  if (typeof remoteAddress === 'string' && remoteAddress.trim().length > 0) {
-    return remoteAddress.trim().slice(0, 128);
-  }
-  return 'unknown';
-};
 const fetchWithTimeout = async (
   url: string,
   init: RequestInit,
@@ -593,34 +575,33 @@ export default defineEventHandler(async (event) => {
   if (!UUID_REGEX.test(userId)) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid profile id' });
   }
-  const config = useRuntimeConfig(event);
-  const supabaseUrl = config.supabaseUrl as string;
-  const supabaseAnonKey = config.supabaseAnonKey as string;
-  const supabaseServiceKey = (config.supabaseServiceKey as string) || '';
-  if (!supabaseUrl || !supabaseAnonKey) {
+  const typedConfig = useRuntimeConfig(event) as ReturnType<typeof useRuntimeConfig> &
+    ApiProtectionConfig;
+  const { supabaseAnonKey, supabaseUrl } = typedConfig;
+  const supabaseServiceKey =
+    typeof typedConfig.supabaseServiceKey === 'string' ? typedConfig.supabaseServiceKey : '';
+  if (
+    typeof supabaseUrl !== 'string' ||
+    !supabaseUrl ||
+    typeof supabaseAnonKey !== 'string' ||
+    !supabaseAnonKey
+  ) {
     throw createError({
       statusCode: 500,
       statusMessage: 'Missing Supabase configuration for shared profiles',
     });
   }
   const sharedProfileRateLimitPerMinute = toPositiveInteger(
-    config.sharedProfileRateLimitPerMinute,
+    typedConfig.sharedProfileRateLimitPerMinute,
     DEFAULT_SHARED_PROFILE_RATE_LIMIT_PER_MINUTE
   );
   const sharedProfileCacheTtlMs = toPositiveInteger(
-    config.sharedProfileCacheTtlMs,
+    typedConfig.sharedProfileCacheTtlMs,
     DEFAULT_SHARED_PROFILE_CACHE_TTL_MS
   );
-  const sharedCacheHandle = createSharedCacheHandle(
-    (config as { public?: { appUrl?: string } }).public?.appUrl
-  );
-  if (!isTestEnvironment && isProductionEnvironment && !sharedCacheHandle.cache) {
-    throw createError({
-      statusCode: 503,
-      statusMessage: 'Shared profile cache is unavailable in this environment',
-    });
-  }
-  const clientIdentifier = getClientIdentifier(event);
+  const trustProxy = Boolean(typedConfig.apiProtection?.trustProxy);
+  const sharedCacheHandle = createSharedCacheHandle(typedConfig.public?.appUrl);
+  const clientIdentifier = getProxyAwareClientIdentifier(event, trustProxy);
   if (!isTestEnvironment) {
     const preAuthRateLimitKey = `shared-profile:ip:${clientIdentifier}:${userId}:${mode}`;
     if (

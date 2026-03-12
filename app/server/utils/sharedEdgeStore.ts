@@ -21,6 +21,9 @@ type SharedRateLimitEntry = {
   count: number;
   resetAt: number;
 };
+const inMemoryRateLimitStore = new Map<string, SharedRateLimitEntry>();
+let lastInMemoryRateLimitCleanupAt = 0;
+const MAX_IN_MEMORY_RATE_LIMIT_ENTRIES = 10_000;
 const DEFAULT_ORIGIN: SharedCacheOrigin = {
   host: 'tarkovtracker.org',
   protocol: 'https:',
@@ -86,6 +89,97 @@ const isRateLimitEntry = (value: unknown): value is SharedRateLimitEntry => {
 };
 const getTtlSeconds = (ttlMs: number): number => {
   return Math.max(1, Math.ceil(ttlMs / 1000));
+};
+const cleanupInMemoryRateLimitStore = (now: number): void => {
+  if (now - lastInMemoryRateLimitCleanupAt < 60_000) {
+    return;
+  }
+  lastInMemoryRateLimitCleanupAt = now;
+  for (const [key, entry] of inMemoryRateLimitStore.entries()) {
+    if (now >= entry.resetAt) {
+      inMemoryRateLimitStore.delete(key);
+    }
+  }
+};
+const trimInMemoryRateLimitStore = (): void => {
+  if (inMemoryRateLimitStore.size < MAX_IN_MEMORY_RATE_LIMIT_ENTRIES) {
+    return;
+  }
+  const overflowCount = inMemoryRateLimitStore.size - MAX_IN_MEMORY_RATE_LIMIT_ENTRIES + 1;
+  const keys = inMemoryRateLimitStore.keys();
+  for (let index = 0; index < overflowCount; index += 1) {
+    const nextKey = keys.next();
+    if (nextKey.done) {
+      break;
+    }
+    inMemoryRateLimitStore.delete(nextKey.value);
+  }
+};
+const getInMemoryRateLimitEntry = (key: string, now: number): SharedRateLimitEntry | null => {
+  cleanupInMemoryRateLimitStore(now);
+  const existing = inMemoryRateLimitStore.get(key);
+  if (!existing || now >= existing.resetAt) {
+    inMemoryRateLimitStore.delete(key);
+    return null;
+  }
+  return {
+    count: Math.max(0, Math.trunc(existing.count)),
+    resetAt: existing.resetAt,
+  };
+};
+const setInMemoryRateLimitEntry = (key: string, entry: SharedRateLimitEntry): void => {
+  if (!inMemoryRateLimitStore.has(key)) {
+    trimInMemoryRateLimitStore();
+  }
+  inMemoryRateLimitStore.set(key, entry);
+};
+const resolveActiveRateLimitEntry = (
+  localEntry: SharedRateLimitEntry,
+  sharedEntry: SharedRateLimitEntry
+): SharedRateLimitEntry => {
+  if (localEntry.resetAt === sharedEntry.resetAt) {
+    return {
+      count: Math.max(localEntry.count, sharedEntry.count),
+      resetAt: sharedEntry.resetAt,
+    };
+  }
+  // Different resetAt values represent different windows, so keep the newer window's count
+  // instead of carrying a higher count forward into that newer reset boundary.
+  return localEntry.resetAt > sharedEntry.resetAt ? localEntry : sharedEntry;
+};
+const resolveRateLimitEntry = (
+  localEntry: SharedRateLimitEntry | null,
+  sharedEntry: SharedRateLimitEntry,
+  hasActiveSharedEntry: boolean
+): SharedRateLimitEntry => {
+  if (!localEntry) {
+    return sharedEntry;
+  }
+  if (!hasActiveSharedEntry) {
+    return localEntry;
+  }
+  return resolveActiveRateLimitEntry(localEntry, sharedEntry);
+};
+const consumeInMemoryRateLimit = (
+  key: string,
+  limit: number,
+  windowMs: number
+): SharedRateLimitEntry | null => {
+  const now = Date.now();
+  const entry = getInMemoryRateLimitEntry(key, now) ?? {
+    count: 0,
+    resetAt: now + windowMs,
+  };
+  if (entry.count >= limit) {
+    setInMemoryRateLimitEntry(key, entry);
+    return null;
+  }
+  const nextEntry = {
+    count: entry.count + 1,
+    resetAt: entry.resetAt,
+  };
+  setInMemoryRateLimitEntry(key, nextEntry);
+  return nextEntry;
 };
 export const createSharedCacheHandle = (appUrl: unknown): SharedCacheHandle => ({
   cache: getSharedCache(),
@@ -154,36 +248,36 @@ export const consumeSharedRateLimit = async (
   windowMs: number,
   onError?: SharedCacheErrorHandler
 ): Promise<boolean> => {
-  if (
-    !handle.cache ||
-    !Number.isFinite(limit) ||
-    limit <= 0 ||
-    !Number.isFinite(windowMs) ||
-    windowMs <= 0
-  ) {
+  if (!Number.isFinite(limit) || limit <= 0 || !Number.isFinite(windowMs) || windowMs <= 0) {
     return true;
+  }
+  const inMemoryKey = `${prefix}:${key}`;
+  if (!handle.cache) {
+    return consumeInMemoryRateLimit(inMemoryKey, limit, windowMs) !== null;
   }
   const now = Date.now();
   const existing = await readSharedCache<unknown>(handle, prefix, key, onError);
-  let entry: SharedRateLimitEntry;
-  if (!isRateLimitEntry(existing) || now >= existing.resetAt) {
-    entry = {
-      count: 0,
-      resetAt: now + windowMs,
-    };
-  } else {
-    entry = {
-      count: Math.max(0, Math.trunc(existing.count)),
-      resetAt: existing.resetAt,
-    };
-  }
+  const hasActiveSharedEntry = isRateLimitEntry(existing) && now < existing.resetAt;
+  const sharedEntry = !hasActiveSharedEntry
+    ? {
+        count: 0,
+        resetAt: now + windowMs,
+      }
+    : {
+        count: Math.max(0, Math.trunc(existing.count)),
+        resetAt: existing.resetAt,
+      };
+  const localEntry = getInMemoryRateLimitEntry(inMemoryKey, now);
+  const entry = resolveRateLimitEntry(localEntry, sharedEntry, hasActiveSharedEntry);
   if (entry.count >= limit) {
+    setInMemoryRateLimitEntry(inMemoryKey, entry);
     return false;
   }
   const nextEntry: SharedRateLimitEntry = {
     count: entry.count + 1,
     resetAt: entry.resetAt,
   };
+  setInMemoryRateLimitEntry(inMemoryKey, nextEntry);
   const ttlMs = Math.max(1, nextEntry.resetAt - now);
   await writeSharedCache(handle, prefix, key, nextEntry, ttlMs, onError);
   return true;

@@ -1,5 +1,14 @@
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
-import { usePreferencesStore, type PreferencesState } from '@/stores/usePreferences';
+import {
+  clearPendingResetPreferencesSnapshot,
+  getPersistedPreferencesState,
+  readPersistedPreferencesSnapshot,
+  readPendingResetPreferencesSnapshot,
+  resetPreferencesStoreForSessionTransition,
+  usePreferencesStore,
+  type PersistedPreferencesState,
+  type PreferencesState,
+} from '@/stores/usePreferences';
 import { SKILL_SORT_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { migrateLegacyMapMarkerColors, normalizeMapMarkerColors } from '@/utils/theme-colors';
@@ -56,6 +65,12 @@ const startPreferencesSync = (
     },
   });
 };
+const applyPersistedPreferencesState = (
+  preferencesStore: ReturnType<typeof usePreferencesStore>,
+  state: PersistedPreferencesState
+) => {
+  preferencesStore.replacePersistedState(state);
+};
 const applyPreferencesRow = (
   preferencesStore: ReturnType<typeof usePreferencesStore>,
   row: Record<string, unknown>
@@ -88,6 +103,12 @@ const applyPreferencesRow = (
       (preferencesStore.$state as unknown as Record<string, unknown>)[camelKey] = value;
     }
   }
+};
+const getPersistedLocaleOverride = (state: PersistedPreferencesState | null): string | null => {
+  const localeOverride = state?.localeOverride;
+  if (typeof localeOverride !== 'string') return null;
+  const trimmedLocaleOverride = localeOverride.trim();
+  return trimmedLocaleOverride.length > 0 ? trimmedLocaleOverride : null;
 };
 const buildPreferencesSyncPayload = (
   preferencesState: PreferencesState,
@@ -194,13 +215,38 @@ export default defineNuxtPlugin((nuxtApp) => {
   stopPreferencesSync();
   stopUserWatch = watch(
     () => [$supabase.user.loggedIn, $supabase.user.id] as const,
-    async ([loggedIn, userId]) => {
-      const localLocaleOverride = preferencesStore.localeOverride;
+    async ([loggedIn, userId], previous) => {
+      const previousUserId = previous?.[1] ?? null;
+      const isInitialRun = previous === undefined;
       let localeOverrideToRestore: string | null = null;
       let shouldApplyShareVisibilityDefaults = false;
+      const pendingSnapshot = userId ? readPendingResetPreferencesSnapshot(userId) : null;
+      const persistedSnapshot = pendingSnapshot ?? readPersistedPreferencesSnapshot(userId);
+      const matchingLocalState =
+        loggedIn && userId && persistedSnapshot?.ownerUserId === userId
+          ? persistedSnapshot.state
+          : null;
+      const legacyLocalState =
+        loggedIn && userId && !matchingLocalState && previousUserId === null
+          ? getPersistedPreferencesState(preferencesStore.$state)
+          : null;
+      const restoreState = matchingLocalState ?? legacyLocalState;
       try {
         stopPreferencesSync();
-        if (!loggedIn || !userId) return;
+        if (!loggedIn || !userId) {
+          if (!isInitialRun) {
+            resetPreferencesStoreForSessionTransition(previousUserId);
+          }
+          return;
+        }
+        if (previousUserId && previousUserId !== userId) {
+          resetPreferencesStoreForSessionTransition(previousUserId);
+        } else if (!restoreState) {
+          preferencesStore.resetToDefaults();
+        }
+        if (restoreState) {
+          applyPersistedPreferencesState(preferencesStore, restoreState);
+        }
         const { data, error } = await $supabase.client
           .from('user_preferences')
           .select('*')
@@ -215,11 +261,16 @@ export default defineNuxtPlugin((nuxtApp) => {
           const row = data as Record<string, unknown>;
           const rowLocaleOverride = getRowLocaleOverride(row);
           applyPreferencesRow(preferencesStore, row);
-          if (!rowLocaleOverride && localLocaleOverride) {
-            localeOverrideToRestore = localLocaleOverride;
+          if (
+            Object.prototype.hasOwnProperty.call(row, 'locale_override') &&
+            row['locale_override'] === null
+          ) {
+            localeOverrideToRestore = null;
+          } else if (!rowLocaleOverride) {
+            localeOverrideToRestore = getPersistedLocaleOverride(restoreState);
           }
         } else {
-          shouldApplyShareVisibilityDefaults = true;
+          shouldApplyShareVisibilityDefaults = !restoreState;
         }
       } catch (error) {
         logger.error('[PreferencesSyncPlugin] Failed to initialize preferences sync:', error);
@@ -233,6 +284,9 @@ export default defineNuxtPlugin((nuxtApp) => {
       startPreferencesSync(preferencesStore, userId);
       if (localeOverrideToRestore && preferencesStore.localeOverride !== localeOverrideToRestore) {
         preferencesStore.setLocaleOverride(localeOverrideToRestore);
+      }
+      if (pendingSnapshot) {
+        clearPendingResetPreferencesSnapshot(userId);
       }
     },
     { immediate: true }

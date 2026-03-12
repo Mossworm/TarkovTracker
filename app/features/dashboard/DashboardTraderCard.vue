@@ -75,6 +75,8 @@
         </div>
         <ReputationInput
           :has-reputation="hasReputation"
+          :input-id="reputationInputId"
+          :input-name="reputationInputName"
           :reputation-input="reputationInput"
           :title="$t('page.dashboard.traders.reputation')"
           @blur="onReputationBlur"
@@ -91,6 +93,8 @@
       <span>{{ $t('page.dashboard.traders.scav_karma') }}</span>
       <ReputationInput
         :has-reputation="true"
+        :input-id="reputationInputId"
+        :input-name="reputationInputName"
         :reputation-input="reputationInput"
         :title="$t('page.dashboard.traders.reputation')"
         @blur="onReputationBlur"
@@ -164,6 +168,8 @@
   });
   const currentLevel = computed(() => tarkovStore.getTraderLevel(props.trader.id));
   const currentReputation = computed(() => tarkovStore.getTraderReputation(props.trader.id));
+  const reputationInputId = computed(() => `trader-reputation-${props.trader.id}`);
+  const reputationInputName = computed(() => `trader-reputation-${props.trader.id}`);
   const updateLevel = (level: number) => {
     tarkovStore.setTraderLevel(props.trader.id, level);
   };

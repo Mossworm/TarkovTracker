@@ -3,6 +3,7 @@
   import { useSystemStore } from '@/stores/useSystemStore';
   import { resetTarkovSync, useTarkovStore } from '@/stores/useTarkov';
   import { useTeamStore } from '@/stores/useTeamStore';
+  import { clearUserScopedAppStorage } from '@/utils/clientStorage';
   import { logger } from '@/utils/logger';
   defineOptions({
     inheritAttrs: false,
@@ -249,23 +250,23 @@
     }
   };
   const resetClientState = () => {
-    localStorage.clear();
     resetTarkovSync('account deleted');
-    preferencesStore.$reset();
+    preferencesStore.resetToDefaults();
     systemStore.$reset();
     teamStore.$reset();
     tarkovStore.$reset();
+    clearUserScopedAppStorage(localStorage, { includeAuthSessions: true });
   };
   const redirectToHome = async () => {
+    showSuccessDialog.value = false;
+    logger.info('Signing out user and redirecting to dashboard...');
     try {
-      showSuccessDialog.value = false;
-      logger.info('Signing out user and redirecting to dashboard...');
-      resetClientState();
       await $supabase.signOut();
       logger.info('Successfully signed out, performing hard reload...');
-      window.location.href = '/';
     } catch (error) {
       logger.error('Failed to sign out and redirect:', error);
+    } finally {
+      resetClientState();
       window.location.href = '/';
     }
   };

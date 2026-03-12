@@ -2,13 +2,55 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveTrustProxySetting } from './app/utils/apiProtectionConfig';
 import { SUPPORTED_LOCALES } from './app/utils/locales';
+import {
+  buildContentSecurityPolicyRouteRules,
+  resolveNitroPreset,
+} from './app/utils/nuxtSecurityConfig';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const appDir = resolve(__dirname, 'app');
 const testsDir = resolve(__dirname, 'tests');
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
 const appVersion = packageJson.version ?? 'dev';
 const isNonProduction = process.env.NODE_ENV !== 'production';
+const CONFIGURED_NITRO_PRESET = process.env.NITRO_PRESET;
+const NITRO_PRESET = resolveNitroPreset(CONFIGURED_NITRO_PRESET);
+const GITHUB_IMAGE_DOMAINS = ['avatars.githubusercontent.com', 'github.com'];
+if (
+  process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID &&
+  process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID &&
+  process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID !==
+    process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID
+) {
+  console.warn('[Config] Conflicting GA measurement IDs - using NUXT_PUBLIC_GA_MEASUREMENT_ID');
+}
+if (
+  process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID &&
+  process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID &&
+  process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID !==
+    process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID
+) {
+  console.warn('[Config] Conflicting Clarity project IDs - using NUXT_PUBLIC_CLARITY_PROJECT_ID');
+}
+const cspRouteRules = buildContentSecurityPolicyRouteRules({
+  clientLogSinkUrl: process.env.NUXT_PUBLIC_CLIENT_LOG_SINK_URL || '/api/logs/client',
+  clarityInstrumentationKey:
+    process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID ||
+    process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID ||
+    '',
+  gaMeasurementId:
+    process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID ||
+    process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID ||
+    '',
+  supabaseUrl:
+    process.env.NUXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    '',
+  teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL,
+  tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL,
+});
 const webApplicationSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
@@ -73,13 +115,24 @@ export default defineNuxtConfig({
         '/api/tarkov/*,/api/changelog,/api/contributors,/api/logs/client,/api/profile/*,/api/streamer/*',
       // Whether to trust proxy headers (X-Forwarded-For, etc.)
       // ONLY enable this if the server is behind a trusted proxy like Cloudflare
-      trustProxy: process.env.API_TRUST_PROXY === 'true',
+      trustProxy: resolveTrustProxySetting({
+        API_TRUST_PROXY: process.env.API_TRUST_PROXY,
+        NITRO_PRESET,
+      }),
     },
     public: {
       NODE_ENV: process.env.NODE_ENV || 'production',
       VITE_LOG_LEVEL: process.env.VITE_LOG_LEVEL || '',
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       appVersion,
+      googleAnalyticsMeasurementId:
+        process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID ||
+        process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID ||
+        '',
+      microsoftClarityProjectId:
+        process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID ||
+        process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID ||
+        '',
       supabaseAnonKey:
         process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
         process.env.SUPABASE_ANON_KEY ||
@@ -106,7 +159,7 @@ export default defineNuxtConfig({
   },
   serverDir: resolve(__dirname, 'app/server'),
   nitro: {
-    preset: 'cloudflare-pages',
+    preset: NITRO_PRESET,
     cloudflare: {
       pages: {
         routes: {
@@ -125,6 +178,7 @@ export default defineNuxtConfig({
     '/_fonts/**': {
       headers: { 'cache-control': 'public,max-age=31536000,immutable' },
     },
+    ...cspRouteRules,
   },
   app: {
     baseURL: '/',
@@ -266,7 +320,7 @@ export default defineNuxtConfig({
     },
   },
   image: {
-    domains: ['avatars.githubusercontent.com', 'github.com'],
+    domains: GITHUB_IMAGE_DOMAINS,
   },
   ui: {
     theme: {

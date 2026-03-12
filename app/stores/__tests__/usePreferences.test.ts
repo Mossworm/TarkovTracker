@@ -1,12 +1,31 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearPendingResetPreferencesSnapshot,
   preferencesDefaultState,
+  readPendingResetPreferencesSnapshot,
+  resetPreferencesStoreForSessionTransition,
   usePreferencesStore,
   type PreferencesState,
   type TaskFilterPreset,
 } from '@/stores/usePreferences';
+import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { MAP_MARKER_COLORS } from '@/utils/theme-colors';
+import { serializeUserScopedStorage } from '@/utils/userScopedStorage';
+const { currentUserId } = vi.hoisted(() => ({
+  currentUserId: {
+    value: null as string | null,
+  },
+}));
+vi.mock('@/utils/userScopedStorage', async () => {
+  const actual = await vi.importActual<typeof import('@/utils/userScopedStorage')>(
+    '@/utils/userScopedStorage'
+  );
+  return {
+    ...actual,
+    getCurrentSupabaseUserId: () => currentUserId.value,
+  };
+});
 describe('usePreferencesStore', () => {
   let pinia: ReturnType<typeof createPinia>;
   const createLocalStorageMock = () => {
@@ -24,11 +43,13 @@ describe('usePreferencesStore', () => {
       }),
     };
   };
-  const localStorageMock = createLocalStorageMock();
+  let localStorageMock: ReturnType<typeof createLocalStorageMock>;
   beforeEach(() => {
     pinia = createPinia();
     setActivePinia(pinia);
-    localStorageMock.clear();
+    currentUserId.value = null;
+    localStorageMock = createLocalStorageMock();
+    clearPendingResetPreferencesSnapshot();
     vi.clearAllMocks();
     vi.stubGlobal('localStorage', localStorageMock);
     vi.stubGlobal('import.meta', { client: true });
@@ -142,7 +163,13 @@ describe('usePreferencesStore', () => {
       const newPinia = createPinia();
       setActivePinia(newPinia);
       const store = usePreferencesStore();
+      const migratedValue = localStorageMock.setItem.mock.calls
+        .filter(([key]) => key === STORAGE_KEYS.preferences)
+        .map(([, value]) => JSON.parse(value))
+        .at(-1);
       expect(store.onlyTasksWithRequiredKeys).toBe(true);
+      expect(migratedValue?.data?.onlyTasksWithRequiredKeys).toBe(true);
+      expect(migratedValue?.data?.onlyTasksWithSuggestedKeys).toBeUndefined();
     });
     it('should not override onlyTasksWithRequiredKeys if both exist', () => {
       const persistedState = {
@@ -196,12 +223,167 @@ describe('usePreferencesStore', () => {
       expect(consoleWarnSpy).toHaveBeenCalled();
       consoleWarnSpy.mockRestore();
     });
+    it('should handle localStorage access failures gracefully', () => {
+      localStorageMock.getItem.mockImplementation(() => {
+        throw new Error('Storage disabled');
+      });
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const newPinia = createPinia();
+      setActivePinia(newPinia);
+      let store: ReturnType<typeof usePreferencesStore> | undefined;
+      expect(() => {
+        store = usePreferencesStore();
+      }).not.toThrow();
+      expect(store?.onlyTasksWithRequiredKeys).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      consoleWarnSpy.mockRestore();
+    });
     it('should handle missing localStorage key gracefully', () => {
       localStorageMock.getItem.mockReturnValue(null);
       const newPinia = createPinia();
       setActivePinia(newPinia);
       const store = usePreferencesStore();
       expect(store.onlyTasksWithRequiredKeys).toBe(false);
+    });
+    it('ignores user-scoped preferences until the matching user is hydrated', () => {
+      localStorageMock.getItem.mockReturnValue(
+        serializeUserScopedStorage({ localeOverride: 'de' }, 'user-1')
+      );
+      const newPinia = createPinia();
+      setActivePinia(newPinia);
+      const store = usePreferencesStore();
+      expect(store.localeOverride).toBeNull();
+    });
+    it('hydrates legacy preferences for authenticated users and re-scopes them', () => {
+      currentUserId.value = 'user-1';
+      localStorageMock.getItem.mockReturnValue(JSON.stringify({ localeOverride: 'de' }));
+      const newPinia = createPinia();
+      setActivePinia(newPinia);
+      const store = usePreferencesStore();
+      const persistedValue = localStorageMock.setItem.mock.calls
+        .filter(([key]) => key === STORAGE_KEYS.preferences)
+        .map(([, value]) => JSON.parse(value))
+        .find((value) => value?._userId === 'user-1');
+      expect(store.localeOverride).toBe('de');
+      expect(persistedValue).toBeTruthy();
+      expect(persistedValue).toMatchObject({
+        _userId: 'user-1',
+        data: {
+          localeOverride: 'de',
+        },
+      });
+    });
+  });
+  describe('Auth Transition Preservation', () => {
+    it('preserves the prior scoped snapshot in memory after logout', () => {
+      const persistedState = {
+        localeOverride: 'de',
+        teamHide: { teammate: true },
+        mapMarkerColors: {
+          ...MAP_MARKER_COLORS,
+          SELF_OBJECTIVE: '#fff',
+        },
+      };
+      localStorageMock.setItem(
+        STORAGE_KEYS.preferences,
+        serializeUserScopedStorage(persistedState, 'user-1')
+      );
+      currentUserId.value = 'user-1';
+      const store = usePreferencesStore();
+      expect(store.teamHide).toEqual({ teammate: true });
+      expect(store.mapMarkerColors.SELF_OBJECTIVE).toBe('#fff');
+      resetPreferencesStoreForSessionTransition('user-1');
+      localStorageMock.setItem(STORAGE_KEYS.preferences, JSON.stringify({ localeOverride: 'fr' }));
+      expect(store.teamHide).toEqual({});
+      expect(store.mapMarkerColors).toEqual({ ...MAP_MARKER_COLORS });
+      expect(readPendingResetPreferencesSnapshot('user-1')).toEqual({
+        ownerUserId: 'user-1',
+        state: persistedState,
+      });
+      clearPendingResetPreferencesSnapshot('user-1');
+      expect(readPendingResetPreferencesSnapshot('user-1')).toBeNull();
+    });
+    it('rewrites preserved logout storage without the legacy task key', () => {
+      localStorageMock.setItem(
+        STORAGE_KEYS.preferences,
+        serializeUserScopedStorage(
+          {
+            localeOverride: 'de',
+            onlyTasksWithSuggestedKeys: true,
+          },
+          'user-1',
+          1234
+        )
+      );
+      currentUserId.value = 'user-1';
+      usePreferencesStore();
+      currentUserId.value = null;
+      resetPreferencesStoreForSessionTransition('user-1');
+      const restoredSnapshot = JSON.parse(
+        localStorageMock.getItem(STORAGE_KEYS.preferences) || '{}'
+      );
+      expect(restoredSnapshot._timestamp).toEqual(expect.any(Number));
+      expect(restoredSnapshot).toMatchObject({
+        _userId: 'user-1',
+        data: {
+          localeOverride: 'de',
+          onlyTasksWithRequiredKeys: true,
+        },
+      });
+      expect(restoredSnapshot.data.onlyTasksWithSuggestedKeys).toBeUndefined();
+    });
+    it('clears prior scoped storage during an account switch', () => {
+      const persistedState = {
+        localeOverride: 'de',
+        teamHide: { teammate: true },
+      };
+      localStorageMock.setItem(
+        STORAGE_KEYS.preferences,
+        serializeUserScopedStorage(persistedState, 'user-1')
+      );
+      currentUserId.value = 'user-1';
+      const store = usePreferencesStore();
+      expect(store.localeOverride).toBe('de');
+      currentUserId.value = 'user-2';
+      resetPreferencesStoreForSessionTransition('user-1');
+      expect(store.localeOverride).toBeNull();
+      expect(store.teamHide).toEqual({});
+      expect(localStorageMock.getItem(STORAGE_KEYS.preferences)).toBeNull();
+      expect(readPendingResetPreferencesSnapshot('user-1')).toEqual({
+        ownerUserId: 'user-1',
+        state: persistedState,
+      });
+    });
+  });
+  describe('State Replacement Actions', () => {
+    it('resetToDefaults fully replaces nested plain objects', () => {
+      const store = usePreferencesStore();
+      store.teamHide = { 'user-1': true };
+      store.mapMarkerColors.SELF_OBJECTIVE = '#123456';
+      (store.mapMarkerColors as Record<string, string>).LEGACY = '#000000';
+      store.resetToDefaults();
+      expect(store.teamHide).toEqual({});
+      expect(store.mapMarkerColors).toEqual({ ...MAP_MARKER_COLORS });
+      expect('LEGACY' in (store.mapMarkerColors as Record<string, string>)).toBe(false);
+    });
+    it('replacePersistedState fully replaces nested plain objects', () => {
+      const store = usePreferencesStore();
+      store.teamHide = { 'user-1': true };
+      (store.mapMarkerColors as Record<string, string>).LEGACY = '#000000';
+      store.replacePersistedState({
+        localeOverride: 'de',
+        mapMarkerColors: {
+          ...MAP_MARKER_COLORS,
+          SELF_OBJECTIVE: '#123456',
+        },
+      });
+      expect(store.localeOverride).toBe('de');
+      expect(store.teamHide).toEqual({});
+      expect(store.mapMarkerColors).toEqual({
+        ...MAP_MARKER_COLORS,
+        SELF_OBJECTIVE: '#123456',
+      });
+      expect('LEGACY' in (store.mapMarkerColors as Record<string, string>)).toBe(false);
     });
   });
   describe('Getters - Streamer Mode', () => {

@@ -17,6 +17,9 @@ const { mockGetQuery, mockGetRequestHeader, mockFetch } = vi.hoisted(() => ({
   mockFetch: vi.fn(),
 }));
 const runtimeConfig = {
+  apiProtection: {
+    trustProxy: false,
+  },
   supabaseUrl: 'https://test.supabase.co',
   supabaseServiceKey: 'test-service-key',
   supabaseAnonKey: 'test-anon-key',
@@ -50,6 +53,7 @@ describe('Team Members API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset runtime config to default state
+    runtimeConfig.apiProtection.trustProxy = false;
     runtimeConfig.supabaseUrl = 'https://test.supabase.co';
     runtimeConfig.supabaseServiceKey = 'test-service-key';
     runtimeConfig.supabaseAnonKey = 'test-anon-key';
@@ -71,6 +75,49 @@ describe('Team Members API', () => {
     };
   });
   describe('Configuration validation', () => {
+    it('should serve team members in production mode', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      vi.resetModules();
+      mockGetQuery.mockReturnValue({ teamId: 'team-456' });
+      try {
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => [
+              {
+                user_id: '11111111-1111-4111-8111-111111111111',
+                current_game_mode: 'pvp',
+                pvp_display_name: 'Player1',
+                pvp_level: 15,
+                pvp_tasks_completed: 10,
+              },
+            ],
+          });
+        const { default: handler } = await import('@/server/api/team/members');
+        await expect(handler(mockEvent as H3Event)).resolves.toEqual({
+          members: ['11111111-1111-4111-8111-111111111111'],
+          profiles: {
+            '11111111-1111-4111-8111-111111111111': {
+              displayName: 'Player1',
+              level: 15,
+              tasksCompleted: 10,
+            },
+          },
+        });
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        vi.resetModules();
+      }
+    });
     it('should throw error when supabaseUrl is missing', async () => {
       runtimeConfig.supabaseUrl = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });

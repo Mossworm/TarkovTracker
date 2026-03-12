@@ -1,7 +1,8 @@
-import { logger } from '@/utils/logger';
-import { STORAGE_KEYS } from '@/utils/storageKeys';
-import { hydrateUserFromSession } from '@/utils/userHydration';
+// eslint-disable-next-line import-x/order
 import type { SupabaseClient, User } from '@supabase/supabase-js';
+import { hasSupabaseAuthSessionHint } from '@/utils/clientStorage';
+import { logger } from '@/utils/logger';
+import { hydrateUserFromSession } from '@/utils/userHydration';
 type OAuthProvider = 'twitch' | 'discord' | 'google' | 'github';
 type SupabaseUser = {
   id: string | null;
@@ -170,11 +171,7 @@ export default defineNuxtPlugin(() => {
   };
   const hasStoredSession = () => {
     try {
-      for (const key of Object.keys(localStorage)) {
-        if (key.endsWith('-auth-token')) {
-          return true;
-        }
-      }
+      return hasSupabaseAuthSessionHint();
     } catch (error) {
       logger.warn('[Supabase] Could not inspect localStorage for session hint', error);
     }
@@ -229,10 +226,6 @@ export default defineNuxtPlugin(() => {
     return data;
   };
   const signOut = async () => {
-    if (typeof window !== 'undefined') {
-      logger.debug('[Supabase] Clearing game progress localStorage on logout');
-      localStorage.removeItem(STORAGE_KEYS.progress);
-    }
     await ensureClientInitialized();
     if (!supabaseClient) {
       return;

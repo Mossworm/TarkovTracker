@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   storageVersion: `${STORAGE_PREFIX}storage_version`,
   progress: `${STORAGE_PREFIX}progress`,
   preferences: `${STORAGE_PREFIX}preferences`,
+  analyticsConsent: `${STORAGE_PREFIX}analytics_consent`,
   progressBackupPrefix: `${STORAGE_PREFIX}progress_backup_`,
   adminLastPurge: `${STORAGE_PREFIX}tt:admin:last-purge`,
   cachePurgeAt: `${STORAGE_PREFIX}tt:cache:last-purge`,
@@ -13,6 +14,7 @@ export const STORAGE_KEYS = {
 export const LEGACY_STORAGE_KEYS = {
   progress: 'progress',
   preferences: 'preferences',
+  analyticsConsent: 'analytics_consent',
   user: 'user',
   progressBackupPrefix: 'progress_backup_',
   adminLastPurge: 'tt:admin:last-purge',

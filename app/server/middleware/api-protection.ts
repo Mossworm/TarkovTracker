@@ -15,19 +15,24 @@ import {
   getRequestURL,
   setResponseHeader,
   setResponseStatus,
-  type H3Event,
 } from 'h3';
 import ipaddr from 'ipaddr.js';
 import { useRuntimeConfig } from '#imports';
 import { createLogger } from '@/server/utils/logger';
+import { getClientAddress } from '@/server/utils/requestIdentity';
 const logger = createLogger('ApiProtection');
-// Type for runtime config API protection settings
-interface ApiProtectionConfig {
+interface ApiProtectionSettings {
   allowedHosts?: string;
   trustedIpRanges?: string;
   requireAuth?: boolean;
   publicRoutes?: string;
   trustProxy?: boolean;
+}
+export interface ApiProtectionConfig {
+  apiProtection?: ApiProtectionSettings;
+  public?: {
+    appUrl?: string;
+  };
 }
 /**
  * Parse a comma-separated string into an array of trimmed, non-empty values
@@ -109,35 +114,6 @@ function isIpTrusted(clientIp: string | null, trustedRanges: string[]): boolean 
     return false;
   }
   return trustedRanges.some((range) => ipInRange(clientIp, range));
-}
-/**
- * Extract client IP from request headers or socket
- *
- * SECURITY: IP-based protection must ONLY be enabled when the server is behind a
- * trusted proxy (e.g., Cloudflare, Nginx) that guarantees the integrity of
- * forwarded IP headers. If trustProxy is false, headers like X-Forwarded-For
- * are ignored as they can be easily spoofed by clients.
- */
-function getClientIp(event: H3Event, trustProxy: boolean = false): string | null {
-  if (trustProxy) {
-    // Cloudflare's connecting IP header (most reliable when behind CF)
-    const cfConnectingIp = getRequestHeader(event, 'cf-connecting-ip');
-    if (cfConnectingIp) return cfConnectingIp;
-    // X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2
-    // The first one is typically the original client
-    const xForwardedFor = getRequestHeader(event, 'x-forwarded-for');
-    if (xForwardedFor) {
-      const firstIp = xForwardedFor.split(',')[0]?.trim();
-      if (firstIp) return firstIp;
-    }
-    // X-Real-IP is often set by nginx
-    const xRealIp = getRequestHeader(event, 'x-real-ip');
-    if (xRealIp) return xRealIp;
-  }
-  // Fallback to socket remote address
-  // Note: node.req.socket is available in standard Node.js environments
-  // In Cloudflare Workers/Pages, the IP is usually only in headers (which we check if trustProxy is true)
-  return event.node.req?.socket?.remoteAddress || null;
 }
 /**
  * Validate the Host header against allowed hosts
@@ -238,9 +214,10 @@ export default defineEventHandler(async (event) => {
     return;
   }
   const config = useRuntimeConfig(event);
+  const typedConfig = config as ApiProtectionConfig;
   const isDevelopment = process.env.NODE_ENV === 'development';
   // Get API protection configuration
-  const apiProtection = (config.apiProtection || {}) as ApiProtectionConfig;
+  const apiProtection: ApiProtectionSettings = typedConfig.apiProtection || {};
   const allowedHosts = parseCommaSeparated(apiProtection.allowedHosts || '');
   const trustedIpRanges = parseCommaSeparated(apiProtection.trustedIpRanges || '');
   const requireAuth = apiProtection.requireAuth !== false; // Default to true
@@ -277,7 +254,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   // === SECURITY CHECK 2: IP Validation (Optional) ===
-  const clientIp = getClientIp(event, apiProtection.trustProxy);
+  const clientIp = getClientAddress(event, apiProtection.trustProxy);
   if (trustedIpRanges.length > 0 && !isIpTrusted(clientIp, trustedIpRanges)) {
     logSecurityEvent('warn', 'Blocked request - untrusted IP', {
       pathname,

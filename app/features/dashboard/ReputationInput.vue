@@ -1,6 +1,8 @@
 <template>
   <input
     v-if="hasReputation"
+    :id="inputId"
+    :name="inputName"
     type="text"
     inputmode="decimal"
     :value="reputationInput"
@@ -18,6 +20,8 @@
   const { t } = useI18n();
   const props = defineProps<{
     hasReputation: boolean;
+    inputId?: string;
+    inputName?: string;
     reputationInput: string;
     title?: string;
   }>();

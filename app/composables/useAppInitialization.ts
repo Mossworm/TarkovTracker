@@ -1,7 +1,11 @@
 import { useI18n } from 'vue-i18n';
 import { useToastI18n } from '@/composables/useToastI18n';
 import { usePreferencesStore } from '@/stores/usePreferences';
-import { initializeTarkovSync, resetTarkovSync, useTarkovStore } from '@/stores/useTarkov';
+import {
+  initializeTarkovSync,
+  resetTarkovStoreForSessionTransition,
+  useTarkovStore,
+} from '@/stores/useTarkov';
 import { logger } from '@/utils/logger';
 /**
  * Handles app-level initialization:
@@ -26,13 +30,22 @@ export function useAppInitialization() {
       logger.error('[useAppInitialization] Failed to apply locale override:', error);
     }
   };
-  const hasAuthenticatedUser = () => {
-    return import.meta.client && $supabase.user.loggedIn && Boolean($supabase.user.id);
+  const getAuthenticatedUserId = () => {
+    if (!import.meta.client || !$supabase.user.loggedIn) {
+      return null;
+    }
+    return $supabase.user.id ?? null;
   };
   let syncStarted = false;
   let migrationAttempted = false;
+  // resetTarkovState keeps the existing (reason, previousUserId) call signature while forwarding
+  // to resetTarkovStoreForSessionTransition(previousUserId, reason).
+  const resetTarkovState = (reason: string, previousUserId: string | null = null) => {
+    resetTarkovStoreForSessionTransition(previousUserId, reason);
+  };
   const startSyncIfNeeded = async () => {
-    if (!hasAuthenticatedUser() || syncStarted) return;
+    const authenticatedUserId = getAuthenticatedUserId();
+    if (!authenticatedUserId || syncStarted) return;
     syncStarted = true;
     try {
       await initializeTarkovSync();
@@ -43,7 +56,7 @@ export function useAppInitialization() {
     }
   };
   const runMigrationIfNeeded = async () => {
-    if (!hasAuthenticatedUser() || migrationAttempted) return;
+    if (!getAuthenticatedUserId() || migrationAttempted) return;
     try {
       const store = useTarkovStore();
       await store.migrateDataIfNeeded?.();
@@ -61,16 +74,16 @@ export function useAppInitialization() {
       const [prevLoggedIn, prevUserId] = previous ?? [false, null];
       if (!loggedIn || !userId) {
         if (prevLoggedIn && prevUserId) {
-          resetTarkovSync(!loggedIn ? 'logout' : 'user unavailable');
+          resetTarkovState(!loggedIn ? 'logout' : 'user unavailable', prevUserId);
         } else if (!loggedIn && prevLoggedIn) {
-          resetTarkovSync('logout');
+          resetTarkovState('logout');
         }
         syncStarted = false;
         migrationAttempted = false;
         return;
       }
       if (prevUserId && userId && prevUserId !== userId) {
-        resetTarkovSync('user switched');
+        resetTarkovState('user switched', prevUserId);
         syncStarted = false;
         migrationAttempted = false;
       }

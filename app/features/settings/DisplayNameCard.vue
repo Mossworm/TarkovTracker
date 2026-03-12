@@ -9,18 +9,20 @@
     <template #content>
       <div class="space-y-2 px-4 py-4">
         <div class="flex items-center gap-2">
-          <p class="text-surface-200 text-sm font-semibold">
+          <label :for="displayNameInputId" class="text-surface-200 text-sm font-semibold">
             {{ $t('settings.display_name.label') }}
-          </p>
+          </label>
           <UTooltip :text="$t('settings.display_name.explanation')">
             <UIcon name="i-mdi-information" class="text-surface-400 h-4 w-4" />
           </UTooltip>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <UInput
+            :id="displayNameInputId"
             v-model="localDisplayName"
             :maxlength="DISPLAY_NAME_MAX_LENGTH"
             :placeholder="$t('settings.display_name.placeholder')"
+            name="display-name"
             class="min-w-48 flex-1"
             @keyup.enter="saveDisplayName"
           />
@@ -54,6 +56,7 @@
   const toast = useToast();
   const tarkovStore = useTarkovStore();
   const DISPLAY_NAME_MAX_LENGTH = LIMITS.DISPLAY_NAME_MAX_LENGTH;
+  const displayNameInputId = 'settings-display-name-input';
   const localDisplayName = ref(tarkovStore.getDisplayName() || '');
   const displayName = computed(() => tarkovStore.getDisplayName());
   const currentModeLabel = computed(() =>

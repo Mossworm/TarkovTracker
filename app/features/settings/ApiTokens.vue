@@ -290,6 +290,7 @@
 </template>
 <script setup lang="ts">
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
+  import { shouldFallbackToDirectTokenInsert } from '@/features/settings/apiTokenErrors';
   import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
@@ -320,6 +321,8 @@
   const generatedToken = ref('');
   const visibleTokens = ref<Set<string>>(new Set());
   const supportsRawTokens = ref(true);
+  let createTokenRequestId = 0;
+  let loadTokensRequestId = 0;
   const userLoggedIn = computed(() => $supabase.user.loggedIn);
   const permissionOptions = computed(() =>
     Object.entries(API_PERMISSIONS).map(([key, value]) => ({
@@ -364,18 +367,59 @@
       'token_id, note, permissions, game_mode, created_at, last_used_at, usage_count, is_active';
     return supportsRawTokens.value ? `${baseColumns}, token_value` : baseColumns;
   };
+  const resetForm = () => {
+    selectedGameMode.value = GAME_MODES.PVP;
+    selectedPermissions.value = ['GP'];
+    note.value = '';
+  };
+  const getActiveUserId = () => {
+    return userLoggedIn.value && $supabase.user.id ? $supabase.user.id : null;
+  };
+  const invalidateTokenLoads = () => {
+    loadTokensRequestId += 1;
+  };
+  const invalidateTokenCreates = () => {
+    createTokenRequestId += 1;
+  };
+  const resetUserScopedState = () => {
+    invalidateTokenCreates();
+    invalidateTokenLoads();
+    loading.value = false;
+    creating.value = false;
+    revokingId.value = null;
+    tokens.value = [];
+    visibleTokens.value = new Set();
+    showCreateDialog.value = false;
+    showTokenCreatedDialog.value = false;
+    generatedToken.value = '';
+    resetForm();
+  };
+  const isCurrentTokenLoad = (requestId: number, userId: string) => {
+    return requestId === loadTokensRequestId && getActiveUserId() === userId;
+  };
+  const isCurrentTokenCreate = (requestId: number, userId: string) => {
+    return requestId === createTokenRequestId && getActiveUserId() === userId;
+  };
   const loadTokens = async () => {
     const table = tableClient();
-    if (!userLoggedIn.value || !$supabase.user.id || !table) {
+    const userId = getActiveUserId();
+    if (!userId || !table) {
+      invalidateTokenLoads();
+      loading.value = false;
       tokens.value = [];
+      visibleTokens.value = new Set();
       return;
     }
+    const requestId = ++loadTokensRequestId;
     loading.value = true;
     try {
       const { data, error } = await table
         .select(buildSelectQuery())
-        .eq('user_id', $supabase.user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      if (!isCurrentTokenLoad(requestId, userId)) {
+        return;
+      }
       if (error) {
         if ((error as { code?: string })?.code === '42703' && supportsRawTokens.value) {
           supportsRawTokens.value = false;
@@ -397,13 +441,18 @@
           tokenValue: supportsRawTokens.value ? (row.token_value ?? null) : null,
         })) || [];
     } catch (error) {
+      if (!isCurrentTokenLoad(requestId, userId)) {
+        return;
+      }
       logger.error('[ApiTokens] Failed to load tokens:', error);
       toast.add({
         title: t('page.settings.card.apitokens.create_token_error'),
         color: 'error',
       });
     } finally {
-      loading.value = false;
+      if (requestId === loadTokensRequestId) {
+        loading.value = false;
+      }
     }
   };
   const generateToken = (gameMode: GameMode) => {
@@ -418,11 +467,6 @@
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
   };
-  const resetForm = () => {
-    selectedGameMode.value = GAME_MODES.PVP;
-    selectedPermissions.value = ['GP'];
-    note.value = '';
-  };
   const togglePermission = (value: TokenPermission, checked: boolean) => {
     if (checked) {
       if (!selectedPermissions.value.includes(value)) {
@@ -434,12 +478,16 @@
   };
   const createToken = async () => {
     const table = tableClient();
-    if (!canSubmit.value || !$supabase.user.id || !table) return;
+    const userId = getActiveUserId();
+    if (creating.value || !canSubmit.value || !userId || !table) return;
+    const requestId = ++createTokenRequestId;
     creating.value = true;
     const createTokenDirect = async (rawToken: string) => {
+      if (!isCurrentTokenCreate(requestId, userId)) return null;
       const hashedToken = await hashToken(rawToken);
+      if (!isCurrentTokenCreate(requestId, userId)) return null;
       const insertPayload: Record<string, unknown> = {
-        user_id: $supabase.user.id,
+        user_id: userId,
         token_hash: hashedToken,
         permissions: selectedPermissions.value,
         game_mode: selectedGameMode.value,
@@ -454,10 +502,12 @@
           error: { code?: string } | null;
         }>;
       let insertResult = await attemptInsert();
+      if (!isCurrentTokenCreate(requestId, userId)) return null;
       if (insertResult.error?.code === '42703' && supportsRawTokens.value) {
         supportsRawTokens.value = false;
         delete insertPayload.token_value;
         insertResult = await attemptInsert();
+        if (!isCurrentTokenCreate(requestId, userId)) return null;
       }
       if (insertResult.error) throw insertResult.error;
       return insertResult.data?.token_id || null;
@@ -471,6 +521,9 @@
           note: note.value || null,
           tokenValue: supportsRawTokens.value ? rawToken : undefined,
         });
+        if (!isCurrentTokenCreate(requestId, userId)) {
+          return;
+        }
         const tokenId = (response as { tokenId?: string })?.tokenId || null;
         const tokenValue = (response as { tokenValue?: string })?.tokenValue || rawToken;
         generatedToken.value = tokenValue;
@@ -481,6 +534,9 @@
         showCreateDialog.value = false;
         showTokenCreatedDialog.value = true;
         await loadTokens();
+        if (!isCurrentTokenCreate(requestId, userId)) {
+          return;
+        }
         if (tokenId && !supportsRawTokens.value) {
           const created = tokens.value.find((token) => token.id === tokenId);
           if (created) created.tokenValue = tokenValue;
@@ -488,12 +544,21 @@
         resetForm();
         return;
       } catch (gatewayError) {
+        if (!isCurrentTokenCreate(requestId, userId)) {
+          return;
+        }
+        if (!shouldFallbackToDirectTokenInsert(gatewayError)) {
+          throw gatewayError;
+        }
         logger.warn(
           '[ApiTokens] Gateway create failed, falling back to direct insert:',
           gatewayError
         );
       }
       const newTokenId = await createTokenDirect(rawToken);
+      if (!isCurrentTokenCreate(requestId, userId)) {
+        return;
+      }
       generatedToken.value = rawToken;
       toast.add({
         title: t('page.settings.card.apitokens.create_token_success'),
@@ -502,19 +567,27 @@
       showCreateDialog.value = false;
       showTokenCreatedDialog.value = true;
       await loadTokens();
+      if (!isCurrentTokenCreate(requestId, userId)) {
+        return;
+      }
       if (newTokenId && !supportsRawTokens.value) {
         const created = tokens.value.find((token) => token.id === newTokenId);
         if (created) created.tokenValue = rawToken;
       }
       resetForm();
     } catch (error) {
+      if (!isCurrentTokenCreate(requestId, userId)) {
+        return;
+      }
       logger.error('[ApiTokens] Failed to create token:', error);
       toast.add({
         title: t('page.settings.card.apitokens.create_token_error'),
         color: 'error',
       });
     } finally {
-      creating.value = false;
+      if (requestId === createTokenRequestId) {
+        creating.value = false;
+      }
     }
   };
   const copyToken = async () => {
@@ -578,17 +651,22 @@
     }
   };
   watch(
-    () => $supabase.user.loggedIn,
-    (loggedIn) => {
-      if (loggedIn) {
-        loadTokens();
-      } else {
-        tokens.value = [];
+    () => [$supabase.user.loggedIn, $supabase.user.id] as const,
+    ([loggedIn, userId], previousState) => {
+      if (!loggedIn) {
+        resetUserScopedState();
+        return;
       }
+      if (userId !== previousState?.[1]) {
+        resetUserScopedState();
+      }
+      loadTokens();
     },
     { immediate: true }
   );
-  onMounted(() => {
-    if (userLoggedIn.value) loadTokens();
+  watch(showTokenCreatedDialog, (isOpen) => {
+    if (!isOpen) {
+      generatedToken.value = '';
+    }
   });
 </script>

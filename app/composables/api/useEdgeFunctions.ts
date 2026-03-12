@@ -2,7 +2,7 @@
  * Composable for calling Supabase Edge Functions
  * Provides typed methods for common edge function operations
  */
-import { getErrorStatus } from '@/utils/errors';
+import { getErrorStatus, isTransientNetworkError } from '@/utils/errors';
 import { logger } from '@/utils/logger';
 import type { PurgeCacheResponse } from '@/types/edge';
 import type {
@@ -14,6 +14,7 @@ import type {
 type GameMode = 'pvp' | 'pve';
 const TEAM_ID_REGEX = /^[a-zA-Z0-9-]{1,64}$/;
 const GATEWAY_OUTAGE_COOLDOWN_MS = 60_000;
+const TOKEN_GATEWAY_FALLBACK_STATUS_CODES = new Set([404, 405]);
 let teamGatewayOutageUntil = 0;
 const getGatewayErrorData = (error: unknown): string | undefined => {
   if (!error || typeof error !== 'object' || !('data' in error)) {
@@ -49,6 +50,13 @@ const shouldCooldownGateway = (error: unknown): boolean => {
   return (
     typeof dataMessage === 'string' &&
     dataMessage.toLowerCase().includes('rate limiter unavailable')
+  );
+};
+const shouldFallbackTokenGateway = (error: unknown): boolean => {
+  const status = getErrorStatus(error);
+  return (
+    (status !== null && TOKEN_GATEWAY_FALLBACK_STATUS_CODES.has(status)) ||
+    isTransientNetworkError(error)
   );
 };
 export const useEdgeFunctions = () => {
@@ -278,6 +286,9 @@ export const useEdgeFunctions = () => {
       try {
         return await callTokenGateway<T>(action, body);
       } catch (error) {
+        if (!shouldFallbackTokenGateway(error)) {
+          throw error;
+        }
         logger.warn('[EdgeFunctions] Token gateway failed, falling back to Supabase:', error);
       }
     }

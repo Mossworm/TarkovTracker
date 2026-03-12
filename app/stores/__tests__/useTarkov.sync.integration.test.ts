@@ -2,7 +2,13 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeTarkovSync, resetTarkovSync, useTarkovStore } from '@/stores/useTarkov';
+import { defaultState } from '@/stores/progressState';
+import {
+  initializeTarkovSync,
+  resetTarkovStoreForSessionTransition,
+  resetTarkovSync,
+  useTarkovStore,
+} from '@/stores/useTarkov';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import type { UserProgressData } from '@/stores/progressState';
 const {
@@ -12,6 +18,7 @@ const {
   getRealtimeCallback,
   i18nTranslate,
   loggerMock,
+  metadataStoreMock,
   pauseSync,
   resumeSync,
   setRealtimeCallback,
@@ -77,6 +84,16 @@ const {
     pause: pauseSync,
     resume: resumeSync,
   }));
+  const metadataStoreMock = {
+    currentGameMode: 'pvp',
+    getTaskById: (taskId: string) => ({
+      id: taskId,
+      name: `Task ${taskId}`,
+    }),
+    initialize: vi.fn(async () => {}),
+    refresh: vi.fn(async () => {}),
+    tasks: [] as Array<{ id: string; name: string }>,
+  };
   type RemoteRow = ReturnType<typeof createRemoteRow>;
   type SupabaseErrorLike = { code?: string; message: string } | null;
   type SingleResult = { data: RemoteRow | null; error: SupabaseErrorLike };
@@ -116,7 +133,7 @@ const {
   const supabaseContext = {
     user: {
       createdAt: '2026-02-20T00:00:00.000Z',
-      id: 'user-1',
+      id: 'user-1' as string | null,
       loggedIn: true,
       providers: [] as string[],
     },
@@ -138,6 +155,7 @@ const {
     getRealtimeCallback: () => realtimeState.callback,
     i18nTranslate,
     loggerMock,
+    metadataStoreMock,
     pauseSync,
     resumeSync,
     setRealtimeCallback: (callback: ((payload: { new: unknown; old: unknown }) => void) | null) => {
@@ -175,13 +193,7 @@ vi.mock('@/composables/useToastI18n', () => ({
   }),
 }));
 vi.mock('@/stores/useMetadata', () => ({
-  useMetadataStore: () => ({
-    getTaskById: (taskId: string) => ({
-      id: taskId,
-      name: `Task ${taskId}`,
-    }),
-    tasks: [],
-  }),
+  useMetadataStore: () => metadataStoreMock,
 }));
 vi.mock('@/utils/logger', () => ({
   logger: loggerMock,
@@ -227,6 +239,10 @@ const progressWithLevel = (level: number): UserProgressData => ({
 const cloneProgress = (value: UserProgressData): UserProgressData => {
   return JSON.parse(JSON.stringify(value)) as UserProgressData;
 };
+const waitForBackgroundTasks = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+};
 const setLocalProgress = (level = 5) => {
   const store = useTarkovStore();
   store.$patch((state) => {
@@ -244,6 +260,12 @@ describe('useTarkov sync integration', () => {
     supabaseContext.user.loggedIn = true;
     supabaseContext.user.providers = [];
     supabaseContext.user.createdAt = '2026-02-20T00:00:00.000Z';
+    metadataStoreMock.currentGameMode = 'pvp';
+    metadataStoreMock.initialize.mockClear();
+    metadataStoreMock.initialize.mockResolvedValue(undefined);
+    metadataStoreMock.refresh.mockClear();
+    metadataStoreMock.refresh.mockResolvedValue(undefined);
+    metadataStoreMock.tasks = [];
     single.mockResolvedValue({ data: createRemoteRow(), error: null });
     upsert.mockResolvedValue({ error: null });
     channel.on.mockImplementation((_: string, __: Record<string, unknown>, callback) => {
@@ -292,6 +314,328 @@ describe('useTarkov sync integration', () => {
     expect(showLocalIgnored).toHaveBeenCalledWith('other_account');
     expect(localStorage.getItem(STORAGE_KEYS.progress)).toBeNull();
   });
+  it('keeps scoped local progress hidden until the matching user session is hydrated', async () => {
+    supabaseContext.user.loggedIn = false;
+    supabaseContext.user.id = null;
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: Date.now(),
+        _userId: 'user-1',
+        data: {
+          ...defaultState,
+          pvp: progressWithLevel(7),
+        },
+      })
+    );
+    const store = useTarkovStore();
+    expect(store.pvp.level).toBe(1);
+    supabaseContext.user.loggedIn = true;
+    supabaseContext.user.id = 'user-1';
+    single.mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116', message: 'No rows' },
+    });
+    await initializeTarkovSync();
+    expect(store.pvp.level).toBe(7);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-1',
+        pvp_data: expect.objectContaining({ level: 7 }),
+      })
+    );
+  });
+  it('refreshes metadata after restoring scoped progress with a different game mode', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: Date.now(),
+        _userId: 'user-1',
+        data: {
+          ...defaultState,
+          currentGameMode: 'pve',
+          pve: progressWithLevel(7),
+        },
+      })
+    );
+    single.mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116', message: 'No rows' },
+    });
+    const store = useTarkovStore();
+    await initializeTarkovSync();
+    await waitForBackgroundTasks();
+    expect(store.currentGameMode).toBe('pve');
+    expect(metadataStoreMock.initialize).toHaveBeenCalledTimes(1);
+    expect(metadataStoreMock.refresh).toHaveBeenCalledTimes(1);
+  });
+  it('logs and emits a telemetry event when metadata refresh after startup sync fails', async () => {
+    const refreshError = new Error('metadata refresh failed');
+    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: Date.now(),
+        _userId: 'user-1',
+        data: {
+          ...defaultState,
+          currentGameMode: 'pve',
+          pve: progressWithLevel(7),
+        },
+      })
+    );
+    metadataStoreMock.refresh.mockRejectedValueOnce(refreshError);
+    single.mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116', message: 'No rows' },
+    });
+    await initializeTarkovSync();
+    await waitForBackgroundTasks();
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      '[TarkovStore] Failed to refresh metadata after startup sync',
+      {
+        event: 'metadata.refresh.failure',
+        metadataGameMode: 'pvp',
+        tarkovGameMode: 'pve',
+      },
+      refreshError
+    );
+    expect(dispatchEventSpy).toHaveBeenCalledTimes(1);
+    const metadataRefreshFailureEvent = dispatchEventSpy.mock.calls[0]?.[0] as CustomEvent<{
+      error: Error;
+      metadataGameMode: string;
+      tarkovGameMode: string;
+    }>;
+    expect(metadataRefreshFailureEvent.type).toBe('metadata.refresh.failure');
+    expect(metadataRefreshFailureEvent.detail).toEqual({
+      error: refreshError,
+      metadataGameMode: 'pvp',
+      tarkovGameMode: 'pve',
+    });
+    dispatchEventSpy.mockRestore();
+  });
+  it('restores legacy local progress for authenticated users so it can be migrated later', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        ...defaultState,
+        pvp: progressWithLevel(9),
+      })
+    );
+    single.mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116', message: 'No rows' },
+    });
+    const store = useTarkovStore();
+    expect(store.pvp.level).toBe(1);
+    await initializeTarkovSync();
+    expect(store.pvp.level).toBe(9);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-1',
+        pvp_data: expect.objectContaining({ level: 9 }),
+      })
+    );
+  });
+  it('restores guest-scoped wrapped local progress for authenticated users before migration', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: Date.now(),
+        _userId: null,
+        data: {
+          ...defaultState,
+          pvp: progressWithLevel(9),
+        },
+      })
+    );
+    single.mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116', message: 'No rows' },
+    });
+    const store = useTarkovStore();
+    expect(store.pvp.level).toBe(1);
+    await initializeTarkovSync();
+    expect(store.pvp.level).toBe(9);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-1',
+        pvp_data: expect.objectContaining({ level: 9 }),
+      })
+    );
+  });
+  it('uses the preserved scoped snapshot after auth reset overwrites localStorage', async () => {
+    const store = useTarkovStore();
+    store.$patch((state) => {
+      state.pvp.level = 14;
+    });
+    const preservedTimestamp = Date.parse('2026-02-25T00:00:00.000Z');
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: preservedTimestamp,
+        _userId: 'user-2',
+        data: {
+          ...defaultState,
+          pvp: progressWithLevel(9),
+        },
+      })
+    );
+    supabaseContext.user.id = 'user-2';
+    single.mockResolvedValue({
+      data: createRemoteRow({
+        pvp_data: progressWithLevel(1),
+        updated_at: '2026-02-01T00:00:00.000Z',
+      }),
+      error: null,
+    });
+    resetTarkovSync('user switched', {
+      preservePersistedStateForUserId: 'user-2',
+    });
+    store.$reset();
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: preservedTimestamp + 5000,
+        _userId: 'user-2',
+        data: structuredClone(defaultState),
+      })
+    );
+    const overwrittenSnapshot = JSON.parse(localStorage.getItem(STORAGE_KEYS.progress) || '{}');
+    expect(overwrittenSnapshot._userId).toBe('user-2');
+    expect(overwrittenSnapshot.data?.pvp?.level).toBe(1);
+    await initializeTarkovSync();
+    expect(store.pvp.level).toBe(9);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-2',
+        pvp_data: expect.objectContaining({ level: 9 }),
+      })
+    );
+  });
+  it('restores the previous user snapshot after logout resets the store', async () => {
+    const store = useTarkovStore();
+    const preservedTimestamp = Date.parse('2026-02-25T00:00:00.000Z');
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: preservedTimestamp,
+        _userId: 'user-1',
+        data: {
+          ...defaultState,
+          pvp: progressWithLevel(11),
+        },
+      })
+    );
+    supabaseContext.user.id = null;
+    supabaseContext.user.loggedIn = false;
+    store.$patch((state) => {
+      state.pvp.level = 42;
+    });
+    resetTarkovStoreForSessionTransition('user-1', 'logout');
+    const restoredSnapshot = JSON.parse(localStorage.getItem(STORAGE_KEYS.progress) || '{}');
+    expect(store.pvp.level).toBe(1);
+    expect(restoredSnapshot._userId).toBe('user-1');
+    expect(restoredSnapshot.data?.pvp?.level).toBe(11);
+  });
+  it('clears progress when preserved logout storage cannot be rewritten', () => {
+    const store = useTarkovStore();
+    const preservedTimestamp = Date.parse('2026-02-25T00:00:00.000Z');
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: preservedTimestamp,
+        _userId: 'user-1',
+        data: {
+          ...defaultState,
+          pvp: progressWithLevel(11),
+        },
+      })
+    );
+    supabaseContext.user.id = null;
+    supabaseContext.user.loggedIn = false;
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    const setItemSpy = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === STORAGE_KEYS.progress) {
+        throw new Error('storage disabled');
+      }
+      return originalSetItem(key, value);
+    });
+    expect(() => resetTarkovStoreForSessionTransition('user-1', 'logout')).not.toThrow();
+    expect(store.pvp.level).toBe(1);
+    expect(localStorage.getItem(STORAGE_KEYS.progress)).toBeNull();
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      `[TarkovStore] Failed to write localStorage key "${STORAGE_KEYS.progress}":`,
+      expect.any(Error)
+    );
+    setItemSpy.mockRestore();
+  });
+  it('prefers the preserved scoped snapshot over guest progress after logout', async () => {
+    const store = useTarkovStore();
+    const preservedTimestamp = Date.parse('2026-02-25T00:00:00.000Z');
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: preservedTimestamp,
+        _userId: 'user-1',
+        data: {
+          ...defaultState,
+          pvp: progressWithLevel(11),
+        },
+      })
+    );
+    supabaseContext.user.id = null;
+    supabaseContext.user.loggedIn = false;
+    resetTarkovStoreForSessionTransition('user-1', 'logout');
+    store.$patch((state) => {
+      state.pvp.level = 4;
+    });
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        _timestamp: preservedTimestamp + 5000,
+        _userId: null,
+        data: store.$state,
+      })
+    );
+    supabaseContext.user.id = 'user-1';
+    supabaseContext.user.loggedIn = true;
+    single.mockResolvedValue({
+      data: createRemoteRow({
+        pvp_data: progressWithLevel(1),
+        updated_at: '2026-02-01T00:00:00.000Z',
+      }),
+      error: null,
+    });
+    await initializeTarkovSync();
+    expect(store.pvp.level).toBe(11);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-1',
+        pvp_data: expect.objectContaining({ level: 11 }),
+      })
+    );
+  });
+  it('restores a legacy unscoped snapshot after logout resets the store', async () => {
+    const store = useTarkovStore();
+    localStorage.setItem(
+      STORAGE_KEYS.progress,
+      JSON.stringify({
+        ...defaultState,
+        pvp: progressWithLevel(11),
+      })
+    );
+    supabaseContext.user.id = null;
+    supabaseContext.user.loggedIn = false;
+    store.$patch((state) => {
+      state.pvp.level = 42;
+    });
+    resetTarkovStoreForSessionTransition('user-1', 'logout');
+    const restoredSnapshot = JSON.parse(localStorage.getItem(STORAGE_KEYS.progress) || '{}');
+    expect(store.pvp.level).toBe(1);
+    expect(restoredSnapshot._userId).toBeUndefined();
+    expect(restoredSnapshot.pvp?.level).toBe(11);
+  });
   it('shows unsaved toast when in-memory progress has no persistent local snapshot', async () => {
     setLocalProgress();
     await initializeTarkovSync();
@@ -313,6 +657,22 @@ describe('useTarkov sync integration', () => {
     localStorage.setItem(STORAGE_KEYS.progress, '{malformed');
     await initializeTarkovSync();
     expect(showLocalIgnored).not.toHaveBeenCalled();
+  });
+  it('falls back to remote sync when localStorage reads throw', async () => {
+    const getItemSpy = vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+      if (key === STORAGE_KEYS.progress) {
+        throw new Error('storage disabled');
+      }
+      return null;
+    });
+    await expect(initializeTarkovSync()).resolves.toBeUndefined();
+    expect(useSupabaseSyncMock).toHaveBeenCalledTimes(1);
+    expect(showLocalIgnored).not.toHaveBeenCalled();
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      `[TarkovStore] Failed to read localStorage key "${STORAGE_KEYS.progress}":`,
+      expect.any(Error)
+    );
+    getItemSpy.mockRestore();
   });
   it('logs warning when showing local-ignored toast fails', async () => {
     showLocalIgnored.mockImplementationOnce(() => {
@@ -341,9 +701,12 @@ describe('useTarkov sync integration', () => {
       return originalSetItem(key, value);
     });
     await initializeTarkovSync();
-    expect(loggerMock.warn).toHaveBeenCalledWith(
-      '[TarkovStore] Could not persist local ownership metadata:',
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      `[TarkovStore] Failed to write localStorage key "${STORAGE_KEYS.progress}":`,
       expect.any(Error)
+    );
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      '[TarkovStore] Could not persist local ownership metadata'
     );
     setItemSpy.mockRestore();
   });

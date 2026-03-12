@@ -26,6 +26,16 @@
         <router-link to="/credits" class="text-info-400 hover:text-info-300 transition-colors">
           {{ t('footer.credits') }}
         </router-link>
+        <template v-if="analyticsConfigured">
+          <span class="text-surface-500">·</span>
+          <button
+            type="button"
+            class="text-info-400 hover:text-info-300 transition-colors"
+            @click="openAnalyticsPreferences"
+          >
+            {{ t('footer.analytics_preferences') }}
+          </button>
+        </template>
       </div>
       <div class="text-surface-500 text-center text-xs">
         <div class="text-surface-400 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
@@ -40,6 +50,23 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
+  import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
-  const appVersion = useRuntimeConfig().public.appVersion || 'dev';
+  const runtimeConfig = useRuntimeConfig();
+  const appVersion = runtimeConfig.public.appVersion || 'dev';
+  const analyticsConfigured = [
+    runtimeConfig.public.googleAnalyticsMeasurementId,
+    runtimeConfig.public.microsoftClarityProjectId,
+  ].some((value) => String(value || '').trim().length > 0);
+  const analyticsConsentApi = shallowRef<ReturnType<typeof useAnalyticsConsent> | null>(null);
+  try {
+    const consentApi = useAnalyticsConsent();
+    analyticsConsentApi.value = analyticsConfigured ? consentApi : null;
+  } catch (error) {
+    logger.error('[AppFooter] Failed to initialize analytics consent', error);
+    analyticsConsentApi.value = null;
+  }
+  const openAnalyticsPreferences = () => {
+    analyticsConsentApi.value?.openPreferences();
+  };
 </script>

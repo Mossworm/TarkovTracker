@@ -1,17 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
-import { usePreferencesStore } from '@/stores/usePreferences';
+import {
+  clearPendingResetPreferencesSnapshot,
+  getPersistedPreferencesState,
+  readPersistedPreferencesSnapshot,
+  readPendingResetPreferencesSnapshot,
+  resetPreferencesStoreForSessionTransition,
+  usePreferencesStore,
+} from '@/stores/usePreferences';
 import { logger } from '@/utils/logger';
 vi.mock('@/composables/supabase/useSupabaseSync', () => ({
   useSupabaseSync: vi.fn(),
 }));
 vi.mock('@/stores/usePreferences', () => ({
+  clearPendingResetPreferencesSnapshot: vi.fn(),
+  getPersistedPreferencesState: vi.fn((state) => state),
+  readPersistedPreferencesSnapshot: vi.fn(),
+  readPendingResetPreferencesSnapshot: vi.fn(),
+  resetPreferencesStoreForSessionTransition: vi.fn(),
   usePreferencesStore: vi.fn(),
 }));
 vi.mock('@/utils/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
+    info: vi.fn(),
     warn: vi.fn(),
   },
 }));
@@ -27,6 +40,7 @@ describe('preferences sync plugin', () => {
   });
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
   it('does not start sync after non-PGRST116 bootstrap errors', async () => {
     vi.mocked(useSupabaseSync).mockReturnValue({
@@ -39,11 +53,14 @@ describe('preferences sync plugin', () => {
     const preferencesStore = {
       $state: {},
       localeOverride: 'en',
+      replacePersistedState: vi.fn(),
+      resetToDefaults: vi.fn(),
       setLocaleOverride: vi.fn(),
       setProfileSharePvePublic: vi.fn(),
       setProfileSharePvpPublic: vi.fn(),
     };
     vi.mocked(usePreferencesStore).mockReturnValue(preferencesStore as never);
+    vi.mocked(readPersistedPreferencesSnapshot).mockReturnValue(null);
     const maybeSingle = vi.fn().mockResolvedValue({
       data: null,
       error: { code: 'PGRST999' },
@@ -64,11 +81,196 @@ describe('preferences sync plugin', () => {
     await waitForWatchCallback();
     expect(maybeSingle).toHaveBeenCalledTimes(1);
     expect(useSupabaseSync).not.toHaveBeenCalled();
+    expect(resetPreferencesStoreForSessionTransition).not.toHaveBeenCalled();
     expect(preferencesStore.setProfileSharePvePublic).not.toHaveBeenCalled();
     expect(preferencesStore.setProfileSharePvpPublic).not.toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
       '[PreferencesSyncPlugin] Error loading preferences from Supabase:',
       { code: 'PGRST999' }
     );
+  });
+  it('does not clear preferences while a stored Supabase session is still hydrating', async () => {
+    vi.mocked(useSupabaseSync).mockReturnValue({
+      isSyncing: ref(false),
+      isPaused: ref(false),
+      cleanup: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+    });
+    vi.stubGlobal('localStorage', { 'sb-test-auth-token': 'token' });
+    const preferencesStore = {
+      $state: {},
+      localeOverride: 'en',
+      replacePersistedState: vi.fn(),
+      resetToDefaults: vi.fn(),
+      setLocaleOverride: vi.fn(),
+      setProfileSharePvePublic: vi.fn(),
+      setProfileSharePvpPublic: vi.fn(),
+    };
+    const from = vi.fn();
+    vi.mocked(usePreferencesStore).mockReturnValue(preferencesStore as never);
+    vi.mocked(readPersistedPreferencesSnapshot).mockReturnValue(null);
+    const plugin = (await import('@/plugins/zz.preferences-sync.client')).default as (
+      nuxtApp: unknown
+    ) => unknown;
+    plugin({
+      $pinia: {},
+      $supabase: {
+        client: { from },
+        user: { id: null, loggedIn: false },
+      },
+    });
+    await waitForWatchCallback();
+    expect(resetPreferencesStoreForSessionTransition).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+    expect(useSupabaseSync).not.toHaveBeenCalled();
+  });
+  it('preserves guest preferences on the initial logged-out bootstrap', async () => {
+    const preferencesStore = {
+      $state: {
+        localeOverride: 'de',
+      },
+      localeOverride: 'de',
+      replacePersistedState: vi.fn(),
+      resetToDefaults: vi.fn(),
+      setLocaleOverride: vi.fn(),
+      setProfileSharePvePublic: vi.fn(),
+      setProfileSharePvpPublic: vi.fn(),
+    };
+    const from = vi.fn();
+    vi.mocked(usePreferencesStore).mockReturnValue(preferencesStore as never);
+    vi.mocked(readPersistedPreferencesSnapshot).mockReturnValue({
+      ownerUserId: null,
+      state: {
+        localeOverride: 'de',
+      },
+    });
+    const plugin = (await import('@/plugins/zz.preferences-sync.client')).default as (
+      nuxtApp: unknown
+    ) => unknown;
+    plugin({
+      $pinia: {},
+      $supabase: {
+        client: { from },
+        user: { id: null, loggedIn: false },
+      },
+    });
+    await waitForWatchCallback();
+    expect(resetPreferencesStoreForSessionTransition).not.toHaveBeenCalled();
+    expect(preferencesStore.resetToDefaults).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+    expect(useSupabaseSync).not.toHaveBeenCalled();
+  });
+  it('preserves legacy in-memory preferences when auth hydration scopes the session', async () => {
+    const cleanup = vi.fn();
+    vi.mocked(useSupabaseSync).mockReturnValue({
+      isSyncing: ref(false),
+      isPaused: ref(false),
+      cleanup,
+      pause: vi.fn(),
+      resume: vi.fn(),
+    });
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116' },
+    });
+    const preferencesStore = {
+      $state: {
+        localeOverride: 'de',
+        profileSharePvePublic: true,
+        profileSharePvpPublic: true,
+      },
+      localeOverride: 'de',
+      replacePersistedState: vi.fn(),
+      resetToDefaults: vi.fn(),
+      setLocaleOverride: vi.fn(),
+      setProfileSharePvePublic: vi.fn(),
+      setProfileSharePvpPublic: vi.fn(),
+    };
+    vi.mocked(usePreferencesStore).mockReturnValue(preferencesStore as never);
+    vi.mocked(readPersistedPreferencesSnapshot).mockReturnValue(null);
+    const from = vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle,
+        })),
+      })),
+    }));
+    const plugin = (await import('@/plugins/zz.preferences-sync.client')).default as (
+      nuxtApp: unknown
+    ) => unknown;
+    plugin({
+      $pinia: {},
+      $supabase: {
+        client: { from },
+        user: { id: 'user-1', loggedIn: true },
+      },
+    });
+    await waitForWatchCallback();
+    expect(getPersistedPreferencesState).toHaveBeenCalledWith(preferencesStore.$state);
+    expect(preferencesStore.replacePersistedState).toHaveBeenCalledWith(preferencesStore.$state);
+    expect(preferencesStore.resetToDefaults).not.toHaveBeenCalled();
+    expect(preferencesStore.setProfileSharePvePublic).not.toHaveBeenCalled();
+    expect(preferencesStore.setProfileSharePvpPublic).not.toHaveBeenCalled();
+    expect(useSupabaseSync).toHaveBeenCalledTimes(1);
+    expect(cleanup).not.toHaveBeenCalled();
+  });
+  it('prefers the preserved scoped snapshot over guest preferences after logout', async () => {
+    const cleanup = vi.fn();
+    vi.mocked(useSupabaseSync).mockReturnValue({
+      isSyncing: ref(false),
+      isPaused: ref(false),
+      cleanup,
+      pause: vi.fn(),
+      resume: vi.fn(),
+    });
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116' },
+    });
+    const preferencesStore = {
+      $state: {
+        localeOverride: 'fr',
+      },
+      localeOverride: 'de',
+      replacePersistedState: vi.fn(),
+      resetToDefaults: vi.fn(),
+      setLocaleOverride: vi.fn(),
+      setProfileSharePvePublic: vi.fn(),
+      setProfileSharePvpPublic: vi.fn(),
+    };
+    vi.mocked(usePreferencesStore).mockReturnValue(preferencesStore as never);
+    vi.mocked(readPendingResetPreferencesSnapshot).mockReturnValue({
+      ownerUserId: 'user-1',
+      state: {
+        localeOverride: 'de',
+      },
+    });
+    vi.mocked(readPersistedPreferencesSnapshot).mockReturnValue(null);
+    const from = vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle,
+        })),
+      })),
+    }));
+    const plugin = (await import('@/plugins/zz.preferences-sync.client')).default as (
+      nuxtApp: unknown
+    ) => unknown;
+    plugin({
+      $pinia: {},
+      $supabase: {
+        client: { from },
+        user: { id: 'user-1', loggedIn: true },
+      },
+    });
+    await waitForWatchCallback();
+    expect(preferencesStore.replacePersistedState).toHaveBeenCalledWith({
+      localeOverride: 'de',
+    });
+    expect(getPersistedPreferencesState).not.toHaveBeenCalled();
+    expect(clearPendingResetPreferencesSnapshot).toHaveBeenCalledWith('user-1');
+    expect(useSupabaseSync).toHaveBeenCalledTimes(1);
+    expect(cleanup).not.toHaveBeenCalled();
   });
 });

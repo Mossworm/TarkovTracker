@@ -28,6 +28,12 @@
         <slot />
       </div>
     </main>
+    <AnalyticsConsentBanner
+      :style="{
+        left: mainMarginLeft,
+        width: `calc(100% - ${mainMarginLeft})`,
+      }"
+    />
     <!-- Back to top button -->
     <BackToTop />
     <!-- Footer pinned to bottom when content is short -->
@@ -73,4 +79,7 @@
   const NavDrawer = defineAsyncComponent(() => import('@/shell/NavDrawer.vue'));
   const AppFooter = defineAsyncComponent(() => import('@/shell/AppFooter.vue'));
   const AppBar = defineAsyncComponent(() => import('@/shell/AppBar.vue'));
+  const AnalyticsConsentBanner = defineAsyncComponent(
+    () => import('@/components/analytics/AnalyticsConsentBanner.vue')
+  );
 </script>

@@ -74,11 +74,16 @@
     >
       <!-- Search (grows to fill space) -->
       <div class="flex-1">
+        <label :for="searchInputId" class="sr-only">
+          {{ $t('page.needed_items.search_placeholder') }}
+        </label>
         <UInput
+          :id="searchInputId"
           ref="searchInput"
           :model-value="search"
           :placeholder="$t('page.needed_items.search_placeholder')"
           icon="i-mdi-magnify"
+          name="needed-items-search"
           size="md"
           :ui="{ trailing: 'pe-1' }"
           class="w-full"
@@ -255,6 +260,7 @@
     'update:cardStyle': [value: CardStyle];
   }>();
   const { t } = useI18n({ useScope: 'global' });
+  const searchInputId = `needed-items-search-${useId()}`;
   const allTab = computed(() => props.filterTabs.find((tab) => tab.value === 'all'));
   const otherTabs = computed(() =>
     props.filterTabs.filter((tab) => {

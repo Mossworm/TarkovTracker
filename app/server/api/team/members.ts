@@ -1,11 +1,6 @@
-import {
-  createError,
-  defineEventHandler,
-  getQuery,
-  getRequestHeader,
-  setResponseHeader,
-  type H3Event,
-} from 'h3';
+import { createError, defineEventHandler, getQuery, getRequestHeader, setResponseHeader } from 'h3';
+import { createLogger } from '@/server/utils/logger';
+import { getProxyAwareClientIdentifier } from '@/server/utils/requestIdentity';
 import {
   consumeSharedRateLimit,
   createSharedCacheHandle,
@@ -13,7 +8,7 @@ import {
   writeSharedCache,
   type SharedCacheHandle,
 } from '@/server/utils/sharedEdgeStore';
-import { createLogger } from '~/server/utils/logger';
+import type { ApiProtectionConfig } from '@/server/middleware/api-protection';
 const logger = createLogger('TeamMembers');
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TEAM_ID_REGEX = /^[a-zA-Z0-9-]{1,64}$/;
@@ -24,7 +19,6 @@ const DEFAULT_TEAM_MEMBERS_CACHE_TTL_MS = 5000;
 const TEAM_MEMBERS_CACHE_PREFIX = 'team-members';
 const TEAM_MEMBERS_RATE_LIMIT_PREFIX = 'team-members-rate';
 const isTestEnvironment = process.env.NODE_ENV === 'test';
-const isProductionEnvironment = process.env.NODE_ENV === 'production';
 const isValidUuid = (value: string): boolean => UUID_REGEX.test(value);
 const isValidTeamId = (value: string): boolean => TEAM_ID_REGEX.test(value);
 const buildRestPath = (resource: string, params: Record<string, string | number>): string => {
@@ -152,24 +146,6 @@ const setCachedTeamMembers = async (
     }
   );
 };
-const getClientIdentifier = (event: H3Event): string => {
-  const forwardedForRaw = getRequestHeader(event, 'x-forwarded-for');
-  if (typeof forwardedForRaw === 'string' && forwardedForRaw.trim().length > 0) {
-    const token = forwardedForRaw.split(',')[0]?.trim();
-    if (token) {
-      return token.slice(0, 128);
-    }
-  }
-  const cfConnectingIp = getRequestHeader(event, 'cf-connecting-ip');
-  if (typeof cfConnectingIp === 'string' && cfConnectingIp.trim().length > 0) {
-    return cfConnectingIp.trim().slice(0, 128);
-  }
-  const remoteAddress = event.node?.req?.socket?.remoteAddress;
-  if (typeof remoteAddress === 'string' && remoteAddress.trim().length > 0) {
-    return remoteAddress.trim().slice(0, 128);
-  }
-  return 'unknown';
-};
 const fetchWithTimeout = async (
   url: string,
   init: RequestInit,
@@ -229,17 +205,14 @@ export default defineEventHandler(async (event) => {
     config.teamMembersCacheTtlMs,
     DEFAULT_TEAM_MEMBERS_CACHE_TTL_MS
   );
-  const sharedCacheHandle = createSharedCacheHandle(
-    (config as { public?: { appUrl?: string } }).public?.appUrl
-  );
-  if (!isTestEnvironment && isProductionEnvironment && !sharedCacheHandle.cache) {
-    throw createError({
-      statusCode: 503,
-      statusMessage: 'Team members cache is unavailable in this environment',
-    });
-  }
+  const typedConfig = config as ApiProtectionConfig;
+  const trustProxy = Boolean(typedConfig.apiProtection?.trustProxy);
+  const sharedCacheHandle = createSharedCacheHandle(typedConfig.public?.appUrl);
   if (!isTestEnvironment) {
-    const preAuthRateLimitKey = `team-members:ip:${teamId}:${getClientIdentifier(event)}`;
+    const preAuthRateLimitKey = `team-members:ip:${teamId}:${getProxyAwareClientIdentifier(
+      event,
+      trustProxy
+    )}`;
     if (
       !(await consumeRateLimit(
         sharedCacheHandle,

@@ -50,7 +50,7 @@
         </div>
         <div class="flex items-center gap-2">
           <div class="flex flex-1 items-center gap-2">
-            <label class="text-surface-200 text-sm font-semibold">
+            <label :for="totalXpInputId" class="text-surface-200 text-sm font-semibold">
               {{ $t('settings.experience.set_total_xp') }}
             </label>
             <UTooltip :text="$t('settings.experience.manual_hint')">
@@ -59,10 +59,12 @@
           </div>
           <div class="flex max-w-xs items-center gap-2">
             <UInput
+              :id="totalXpInputId"
               v-model.number="manualXPInput"
               type="number"
               :min="0"
               :placeholder="totalXP.toString()"
+              name="total-xp"
               size="sm"
               class="w-32"
             />
@@ -100,6 +102,7 @@
   const preferencesStore = usePreferencesStore();
   const { derivedLevel, setTotalXP, totalXP, xpProgress, xpToNextLevel } = useXpCalculation();
   const formatNumber = useLocaleNumberFormatter();
+  const totalXpInputId = 'settings-total-xp-input';
   const manualXPInput = ref<number | null>(null);
   const isValidXPInput = computed(() => {
     return (

@@ -45,7 +45,17 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
 
 # Optional: App configuration
 # NUXT_PUBLIC_APP_URL=http://localhost:3000
+# NUXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+# NUXT_PUBLIC_CLARITY_PROJECT_ID=xxxxxxxxxx
 ```
+
+`NUXT_PUBLIC_APP_URL` only sets the public app/canonical URL. `NUXT_PUBLIC_GA_MEASUREMENT_ID`
+and `NUXT_PUBLIC_CLARITY_PROJECT_ID` only enable the Google Analytics and Microsoft Clarity
+integration codepaths; they do not start tracking by themselves. Tracking stays disabled until the
+user explicitly opts in through the analytics consent banner or footer "Analytics Preferences"
+control. That opt-in state is managed in `app/composables/useAnalyticsConsent.ts`, and
+`app/plugins/03.analytics-consent-mode.client.ts` keeps analytics consent mode denied until the
+user accepts.
 
 ## Cloudflare Workers
 

@@ -19,6 +19,7 @@ import {
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { delay } from '@/utils/async';
+import { clearProgressStorage } from '@/utils/clientStorage';
 import {
   GAME_MODES,
   MANUAL_FAIL_TASK_IDS,
@@ -32,8 +33,13 @@ import {
   getCanonicalSkillKey,
   resolveSkillKey,
 } from '@/utils/skillHelpers';
-import { STORAGE_KEYS } from '@/utils/storageKeys';
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '@/utils/storageKeys';
 import { getCompletionFlags, type RawTaskCompletion } from '@/utils/taskStatus';
+import {
+  getCurrentSupabaseUserId,
+  parseUserScopedStorage,
+  serializeUserScopedStorage,
+} from '@/utils/userScopedStorage';
 import type { GameEdition, HideoutStation, Task } from '@/types/tarkov';
 // ============================================================================
 // Constants
@@ -84,6 +90,11 @@ export type PrestigeRunRecord = {
   prestigeFrom: number;
   prestigeTo: number;
   summary: PrestigeRunSummary;
+};
+export type PersistedProgressSnapshot = {
+  state: UserState;
+  storedUserId: string | null;
+  timestamp: number | null;
 };
 type UserPrestigeRunRow = {
   created_at?: string | null;
@@ -152,6 +163,108 @@ const cloneStateSnapshot = <T>(value: T): T => {
   } catch {
     return JSON.parse(JSON.stringify(rawValue)) as T;
   }
+};
+const safeGetItem = (key: string): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    logger.error(`[TarkovStore] Failed to read localStorage key "${key}":`, error);
+    return null;
+  }
+};
+const safeSetItem = (key: string, value: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    logger.error(`[TarkovStore] Failed to write localStorage key "${key}":`, error);
+    return false;
+  }
+};
+const safeRemoveItem = (key: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch (error) {
+    logger.error(`[TarkovStore] Failed to remove localStorage key "${key}":`, error);
+    return false;
+  }
+};
+const clearProgressStorageSafely = () => {
+  try {
+    clearProgressStorage();
+  } catch (error) {
+    logger.error('[TarkovStore] Failed to clear progress storage:', error);
+  }
+};
+const clearActiveProgressStorage = () => {
+  if (typeof window === 'undefined') return;
+  safeRemoveItem(STORAGE_KEYS.progress);
+  safeRemoveItem(LEGACY_STORAGE_KEYS.progress);
+};
+const backupProgressStorageValue = (rawValue: string, storedUserId: string | null) => {
+  if (typeof window === 'undefined') return;
+  const ownerKey = storedUserId || 'anonymous';
+  const backupKey = `${STORAGE_KEYS.progressBackupPrefix}${ownerKey}_${Date.now()}`;
+  if (safeSetItem(backupKey, rawValue) && import.meta.dev) {
+    logger.debug(`[TarkovStore] Data backed up to ${backupKey}`);
+  }
+};
+const parsePersistedProgressState = (
+  rawValue: string | null | undefined,
+  userId: string | null
+): PersistedProgressSnapshot | null => {
+  if (!rawValue) {
+    return null;
+  }
+  const wrapped = parseUserScopedStorage<UserState>(rawValue);
+  if (wrapped) {
+    if (wrapped._userId !== userId) {
+      return null;
+    }
+    return {
+      state: wrapped.data,
+      storedUserId: wrapped._userId,
+      timestamp: wrapped._timestamp ?? null,
+    };
+  }
+  try {
+    return {
+      state: JSON.parse(rawValue) as UserState,
+      storedUserId: null,
+      timestamp: null,
+    };
+  } catch {
+    return null;
+  }
+};
+const readPersistedProgressState = (userId: string | null): PersistedProgressSnapshot | null => {
+  if (!import.meta.client) {
+    return null;
+  }
+  return parsePersistedProgressState(safeGetItem(STORAGE_KEYS.progress), userId);
+};
+const getPreservedProgressStorageValue = (previousUserId: string | null): string | null => {
+  if (!import.meta.client || !previousUserId) {
+    return null;
+  }
+  const rawPersistedState = safeGetItem(STORAGE_KEYS.progress);
+  return parsePersistedProgressState(rawPersistedState, previousUserId) ? rawPersistedState : null;
+};
+const patchStoreState = (
+  store: { $patch: (fn: (state: UserState) => void) => void },
+  snapshot: UserState
+) => {
+  store.$patch((state) => {
+    state.currentGameMode = snapshot.currentGameMode;
+    state.gameEdition = snapshot.gameEdition;
+    state.tarkovUid = snapshot.tarkovUid;
+    state.pvp = snapshot.pvp;
+    state.pve = snapshot.pve;
+  });
 };
 const toProgressEpoch = (modeData: UserProgressData | undefined): number => {
   if (
@@ -788,11 +901,7 @@ const performReset = async (
       throw new Error(`Failed to reset remote progress: ${error.message}`);
     }
   }
-  if (mode === 'all') {
-    localStorage.clear();
-  } else {
-    localStorage.removeItem(STORAGE_KEYS.progress);
-  }
+  clearProgressStorage();
   store.$patch((state) => {
     if (mode === 'all' || mode === 'pvp') state.pvp = freshState.pvp;
     if (mode === 'all' || mode === 'pve') state.pve = freshState.pve;
@@ -944,7 +1053,7 @@ const tarkovActions = {
       await $supabase.client
         .from('user_progress')
         .upsert(buildUpsertPayload($supabase.user.id, freshState));
-      localStorage.clear();
+      clearProgressStorage();
       this.$patch((state) => {
         state.currentGameMode = freshState.currentGameMode;
         state.gameEdition = freshState.gameEdition;
@@ -1482,24 +1591,15 @@ export const useTarkovStore = defineStore('swapTarkov', {
     // Add userId to serialized data to prevent cross-user contamination
     serializer: {
       serialize: (state: StateTree) => {
-        // Get current user ID (may be null if not logged in)
-        let currentUserId: string | null = null;
-        try {
-          const nuxtApp = useNuxtApp();
-          currentUserId = nuxtApp.$supabase?.user?.id || null;
-        } catch {
-          // Nuxt app may not be available during SSR serialize
-        }
-        // Wrap state with userId for validation on restore
-        const wrappedState = {
-          _userId: currentUserId,
-          _timestamp: Date.now(),
-          data: state,
-        };
-        const serialized = JSON.stringify(wrappedState);
+        const now = Date.now();
+        const currentUserId = getCurrentSupabaseUserId();
+        const serialized = serializeUserScopedStorage(
+          cloneStateSnapshot(state as UserState),
+          currentUserId,
+          now
+        );
         // QUOTA MANAGEMENT: Check if localStorage has enough space
         // Throttled to avoid performance impact - only check every 60 seconds
-        const now = Date.now();
         const shouldCheckQuota = now - lastQuotaCheckTime > QUOTA_CHECK_INTERVAL_MS;
         if (shouldCheckQuota && typeof window !== 'undefined') {
           lastQuotaCheckTime = now;
@@ -1544,10 +1644,11 @@ export const useTarkovStore = defineStore('swapTarkov', {
               for (const key of backupKeys) {
                 if (currentUsage + neededSpace <= estimatedQuota - safetyBuffer) break;
                 const keySize = localStorage[key].length + key.length;
-                localStorage.removeItem(key);
-                currentUsage -= keySize;
-                removedCount++;
-                logger.debug(`[TarkovStore] Removed old backup: ${key}`);
+                if (safeRemoveItem(key)) {
+                  currentUsage -= keySize;
+                  removedCount++;
+                  logger.debug(`[TarkovStore] Removed old backup: ${key}`);
+                }
               }
               if (removedCount > 0) {
                 logger.info(`[TarkovStore] Cleaned up ${removedCount} old backups to free space`);
@@ -1563,46 +1664,35 @@ export const useTarkovStore = defineStore('swapTarkov', {
       },
       deserialize: (value: string) => {
         try {
-          const parsed = JSON.parse(value);
-          // Old format without wrapper (migrate)
-          if (!parsed._userId && !parsed.data) {
-            if (import.meta.dev) logger.debug('[TarkovStore] Migrating old localStorage format');
-            return parsed as UserState;
-          }
-          // New format with wrapper - validate userId
-          const storedUserId = parsed._userId;
-          let currentUserId: string | null = null;
-          try {
-            const nuxtApp = useNuxtApp();
-            currentUserId = nuxtApp.$supabase?.user?.id || null;
-          } catch {
-            // Nuxt app not available, allow restore for unauthenticated users
-            if (!storedUserId) {
-              return parsed.data as UserState;
+          const wrapped = parseUserScopedStorage<UserState>(value);
+          const currentUserId = getCurrentSupabaseUserId();
+          if (!wrapped) {
+            if (import.meta.dev) {
+              logger.debug('[TarkovStore] Restoring legacy localStorage format', {
+                currentUserId,
+              });
             }
+            return JSON.parse(value) as UserState;
           }
-          // If user is logged in and stored userId doesn't match, return default state
-          if (currentUserId && storedUserId && storedUserId !== currentUserId) {
+          const storedUserId = wrapped._userId;
+          if (storedUserId === currentUserId) {
+            return wrapped.data;
+          }
+          if (storedUserId && currentUserId && storedUserId !== currentUserId) {
             logger.warn(
               `[TarkovStore] localStorage userId mismatch! ` +
                 `Stored: ${storedUserId}, Current: ${currentUserId}. ` +
                 `Backing up and clearing localStorage to prevent data corruption.`
             );
-            // Backup the corrupted/mismatching localStorage
-            if (typeof window !== 'undefined') {
-              try {
-                const backupKey = `${STORAGE_KEYS.progressBackupPrefix}${storedUserId}_${Date.now()}`;
-                localStorage.setItem(backupKey, value);
-                if (import.meta.dev) logger.debug(`[TarkovStore] Data backed up to ${backupKey}`);
-                localStorage.removeItem(STORAGE_KEYS.progress);
-              } catch (e) {
-                logger.error('[TarkovStore] Error backing up/clearing localStorage:', e);
-              }
-            }
+            backupProgressStorageValue(value, storedUserId);
+            clearActiveProgressStorage();
             return structuredClone(defaultState);
           }
-          // UserId matches or user not logged in - safe to restore
-          return parsed.data as UserState;
+          logger.debug('[TarkovStore] Ignoring scoped progress until matching auth state loads', {
+            currentUserId,
+            storedUserId,
+          });
+          return structuredClone(defaultState);
         } catch (e) {
           logger.error('[TarkovStore] Error deserializing localStorage:', e);
           return structuredClone(defaultState);
@@ -1617,11 +1707,74 @@ export type TarkovStore = ReturnType<typeof useTarkovStore>;
 let syncController: ReturnType<typeof useSupabaseSync> | null = null;
 let syncUserId: string | null = null;
 let pendingSyncWatchStop: (() => void) | null = null;
+let pendingResetProgressSnapshot: {
+  snapshot: PersistedProgressSnapshot | null;
+  userId: string | null;
+} | null = null;
 const shownLocalIgnoreReasons = new Set<LocalIgnoredReason>();
+const METADATA_REFRESH_FAILURE_EVENT = 'metadata.refresh.failure';
 export function getSyncController() {
   return syncController;
 }
-export function resetTarkovSync(reason?: string) {
+const syncMetadataAfterStartup = (tarkovStore: TarkovStore) => {
+  const metadataStore = useMetadataStore();
+  if (metadataStore.currentGameMode === tarkovStore.getCurrentGameMode()) {
+    return;
+  }
+  void (async () => {
+    try {
+      await metadataStore.initialize();
+      if (metadataStore.currentGameMode === tarkovStore.getCurrentGameMode()) {
+        return;
+      }
+      await metadataStore.refresh();
+    } catch (error) {
+      const metadataGameMode = metadataStore.currentGameMode;
+      const tarkovGameMode = tarkovStore.getCurrentGameMode();
+      logger.error(
+        '[TarkovStore] Failed to refresh metadata after startup sync',
+        {
+          event: METADATA_REFRESH_FAILURE_EVENT,
+          metadataGameMode,
+          tarkovGameMode,
+        },
+        error
+      );
+      if (import.meta.client) {
+        window.dispatchEvent(
+          new CustomEvent(METADATA_REFRESH_FAILURE_EVENT, {
+            detail: {
+              error,
+              metadataGameMode,
+              tarkovGameMode,
+            },
+          })
+        );
+      }
+    }
+  })();
+};
+/**
+ * Reset `resetTarkovSync` state and optionally preserve scoped progress across auth transitions.
+ * @param reason Optional log context for the reset.
+ * @param options Optional reset behavior.
+ * @param options.preservePersistedStateForUserId When provided as `string | null`, saves
+ * `pendingResetProgressSnapshot` with `readPersistedProgressState(userId)` so user-scoped
+ * progress can survive auth handoffs. Passing no `options` clears `pendingResetProgressSnapshot`.
+ */
+export function resetTarkovSync(
+  reason?: string,
+  options?: { preservePersistedStateForUserId?: string | null }
+) {
+  if (options) {
+    const userId = options.preservePersistedStateForUserId ?? null;
+    pendingResetProgressSnapshot = {
+      snapshot: readPersistedProgressState(userId),
+      userId,
+    };
+  } else {
+    pendingResetProgressSnapshot = null;
+  }
   if (syncController) {
     logger.debug(`[TarkovStore] Clearing Supabase sync${reason ? ` (${reason})` : ''}`);
     syncController.cleanup();
@@ -1638,6 +1791,26 @@ export function resetTarkovSync(reason?: string) {
   recentLocalSyncTimes.length = 0;
   lastApiUpdateIds.pvp = null;
   lastApiUpdateIds.pve = null;
+}
+export function resetTarkovStoreForSessionTransition(
+  previousUserId: string | null = null,
+  reason?: string
+) {
+  const preservedState = getPreservedProgressStorageValue(previousUserId);
+  const currentUserId = getCurrentSupabaseUserId();
+  resetTarkovSync(reason, {
+    preservePersistedStateForUserId: previousUserId,
+  });
+  useTarkovStore().$reset();
+  if (!import.meta.client) {
+    return;
+  }
+  if (preservedState && currentUserId === null) {
+    if (safeSetItem(STORAGE_KEYS.progress, preservedState)) {
+      return;
+    }
+  }
+  clearProgressStorageSafely();
 }
 export async function initializeTarkovSync() {
   const tarkovStore = useTarkovStore();
@@ -1658,9 +1831,19 @@ export async function initializeTarkovSync() {
       resetTarkovSync('user changed');
     }
     logger.debug('[TarkovStore] Setting up Supabase sync and listener');
+    const preservedLocalSnapshot =
+      pendingResetProgressSnapshot?.userId === currentUserId
+        ? pendingResetProgressSnapshot.snapshot
+        : null;
     const getLocalStorageMeta = () => {
+      if (preservedLocalSnapshot) {
+        return {
+          storedUserId: preservedLocalSnapshot.storedUserId,
+          timestamp: preservedLocalSnapshot.timestamp,
+        };
+      }
       if (typeof window === 'undefined') return null;
-      const raw = localStorage.getItem(STORAGE_KEYS.progress);
+      const raw = safeGetItem(STORAGE_KEYS.progress);
       if (!raw) return null;
       try {
         const parsed = JSON.parse(raw) as
@@ -1695,17 +1878,13 @@ export async function initializeTarkovSync() {
       timestamp: number | null = null
     ) => {
       if (typeof window === 'undefined') return;
-      try {
-        localStorage.setItem(
+      if (
+        !safeSetItem(
           STORAGE_KEYS.progress,
-          JSON.stringify({
-            _userId: userId,
-            _timestamp: timestamp ?? Date.now(),
-            data: cloneStateSnapshot(state),
-          })
-        );
-      } catch (error) {
-        logger.warn('[TarkovStore] Could not persist local ownership metadata:', error);
+          serializeUserScopedStorage(cloneStateSnapshot(state), userId, timestamp ?? Date.now())
+        )
+      ) {
+        logger.warn('[TarkovStore] Could not persist local ownership metadata');
       }
     };
     const resetStoreToDefault = () => {
@@ -1726,15 +1905,31 @@ export async function initializeTarkovSync() {
       let resolvedLocalState: UserState | null = null;
       if (storedUserId && storedUserId !== currentUserId) {
         logger.warn('[TarkovStore] Local progress belongs to a different user; clearing');
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(STORAGE_KEYS.progress);
-        }
+        clearActiveProgressStorage();
         resetStoreToDefault();
         notifyLocalIgnored('other_account');
       }
       // Get current localStorage state (loaded by persist plugin)
       let localState = tarkovStore.$state;
       let hasLocalProgress = hasProgress(localState);
+      if (preservedLocalSnapshot) {
+        localState = preservedLocalSnapshot.state;
+        hasLocalProgress = hasProgress(localState);
+        if (!deepEqual(localState, tarkovStore.$state)) {
+          patchStoreState(tarkovStore, localState);
+        }
+      } else if (!hasLocalProgress && (storedUserId === currentUserId || storedUserId === null)) {
+        const persistedLocalState =
+          readPersistedProgressState(currentUserId) ??
+          (storedUserId !== currentUserId ? readPersistedProgressState(storedUserId) : null);
+        if (persistedLocalState) {
+          localState = persistedLocalState.state;
+          hasLocalProgress = hasProgress(localState);
+          if (hasLocalProgress) {
+            patchStoreState(tarkovStore, localState);
+          }
+        }
+      }
       if (hasLocalProgress && !hasLocalPersistence) {
         logger.warn('[TarkovStore] Local progress exists in memory without persistence; resetting');
         resetStoreToDefault();
@@ -1939,6 +2134,10 @@ export async function initializeTarkovSync() {
     if (!loadResult.ok) {
       logger.error('[TarkovStore] Initial load failed; sync not started');
       throw new Error('Supabase initial load failed');
+    }
+    syncMetadataAfterStartup(tarkovStore);
+    if (preservedLocalSnapshot) {
+      pendingResetProgressSnapshot = null;
     }
     // Repair failed task states for existing users (runs once after data load)
     // This reapplies valid branch failures and clears stale failed flags
