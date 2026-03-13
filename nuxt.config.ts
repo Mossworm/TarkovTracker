@@ -8,6 +8,11 @@ import {
   buildContentSecurityPolicyRouteRules,
   resolveNitroPreset,
 } from './app/utils/nuxtSecurityConfig';
+import {
+  GITHUB_IMAGE_DOMAINS,
+  resolveSupabaseRuntimeConfig,
+  TARKOV_IMAGE_DOMAINS,
+} from './app/utils/runtimeConfig';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const appDir = resolve(__dirname, 'app');
 const testsDir = resolve(__dirname, 'tests');
@@ -16,7 +21,12 @@ const appVersion = packageJson.version ?? 'dev';
 const isNonProduction = process.env.NODE_ENV !== 'production';
 const CONFIGURED_NITRO_PRESET = process.env.NITRO_PRESET;
 const NITRO_PRESET = resolveNitroPreset(CONFIGURED_NITRO_PRESET);
-const GITHUB_IMAGE_DOMAINS = ['avatars.githubusercontent.com', 'github.com'];
+const {
+  privateAnonKey: PRIVATE_SUPABASE_ANON_KEY,
+  privateUrl: PRIVATE_SUPABASE_URL,
+  publicAnonKey: PUBLIC_SUPABASE_ANON_KEY,
+  publicUrl: PUBLIC_SUPABASE_URL,
+} = resolveSupabaseRuntimeConfig(process.env);
 if (
   process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID &&
   process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID &&
@@ -43,11 +53,7 @@ const cspRouteRules = buildContentSecurityPolicyRouteRules({
     process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID ||
     process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID ||
     '',
-  supabaseUrl:
-    process.env.NUXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    '',
+  supabaseUrl: PUBLIC_SUPABASE_URL,
   teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL,
   tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL,
 });
@@ -81,21 +87,13 @@ export default defineNuxtConfig({
   ignore: ['**/__tests__/**', '**/*.test.*', '**/*.spec.*'],
   runtimeConfig: {
     // Server-only (private) runtime config
-    supabaseUrl:
-      process.env.NUXT_SUPABASE_URL ||
-      process.env.SUPABASE_URL ||
-      process.env.VITE_SUPABASE_URL ||
-      '',
+    supabaseUrl: PRIVATE_SUPABASE_URL,
     supabaseServiceKey:
       process.env.NUXT_SUPABASE_SERVICE_KEY ||
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SB_SERVICE_ROLE_KEY ||
       '',
-    supabaseAnonKey:
-      process.env.NUXT_SUPABASE_ANON_KEY ||
-      process.env.SUPABASE_ANON_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      '',
+    supabaseAnonKey: PRIVATE_SUPABASE_ANON_KEY,
     githubToken:
       process.env.NUXT_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || '',
     githubContributorsExclude:
@@ -169,16 +167,8 @@ export default defineNuxtConfig({
         process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID ||
         process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID ||
         '',
-      supabaseAnonKey:
-        process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
-        process.env.SUPABASE_ANON_KEY ||
-        process.env.VITE_SUPABASE_ANON_KEY ||
-        '',
-      supabaseUrl:
-        process.env.NUXT_PUBLIC_SUPABASE_URL ||
-        process.env.SUPABASE_URL ||
-        process.env.VITE_SUPABASE_URL ||
-        '',
+      supabaseAnonKey: PUBLIC_SUPABASE_ANON_KEY,
+      supabaseUrl: PUBLIC_SUPABASE_URL,
       clientLogSinkUrl: process.env.NUXT_PUBLIC_CLIENT_LOG_SINK_URL || '/api/logs/client',
       teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL || '',
       tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL || '',
@@ -356,7 +346,7 @@ export default defineNuxtConfig({
     },
   },
   image: {
-    domains: GITHUB_IMAGE_DOMAINS,
+    domains: [...GITHUB_IMAGE_DOMAINS, ...TARKOV_IMAGE_DOMAINS],
   },
   ui: {
     theme: {

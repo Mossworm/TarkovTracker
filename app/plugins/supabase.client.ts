@@ -211,6 +211,9 @@ export default defineNuxtPlugin({
       }
       await initPromise;
     };
+    const initializeClientInBackground = () => {
+      void ensureClientInitialized().catch(() => {});
+    };
     const signInWithOAuth = async (
       provider: OAuthProvider,
       options?: { skipBrowserRedirect?: boolean; redirectTo?: string }
@@ -248,6 +251,8 @@ export default defineNuxtPlugin({
     });
     if (hasOAuthHash() || hasStoredSession()) {
       await ensureClientInitialized();
+    } else {
+      initializeClientInBackground();
     }
     return {
       provide: {

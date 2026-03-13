@@ -143,6 +143,54 @@ describe('supabase plugin', () => {
     expect(result?.provide.supabase.user.id).toBe('user-1');
     expect(result?.provide.supabase.user.loggedIn).toBe(true);
   });
+  it('initializes auth listeners in background without a stored session', async () => {
+    localStorage.removeItem('sb-test-auth-token');
+    const sessionDeferred = createDeferred<{
+      data: { session: ReturnType<typeof createSession> };
+    }>();
+    let authStateChangeCallback: MockAuthStateChangeCallback | null = null;
+    mockCreateClient.mockReturnValue({
+      auth: {
+        getSession: vi.fn(() => sessionDeferred.promise),
+        onAuthStateChange: vi.fn((callback: MockAuthStateChangeCallback) => {
+          authStateChangeCallback = callback;
+          return {
+            data: {
+              subscription: {
+                unsubscribe: vi.fn(),
+              },
+            },
+          };
+        }),
+        signInWithOAuth: vi.fn(),
+        signOut: vi.fn(),
+      },
+    });
+    const plugin = (await import('@/plugins/supabase.client')).default;
+    let resolved = false;
+    const setupPromise = Promise.resolve(
+      plugin.setup?.({} as Parameters<NonNullable<typeof plugin.setup>>[0])
+    ).then((value) => {
+      resolved = true;
+      return value;
+    });
+    await flushPlugin();
+    expect(resolved).toBe(true);
+    expect(mockCreateClient).toHaveBeenCalledTimes(1);
+    const result = (await setupPromise) as SupabasePluginProvide | undefined;
+    expect(result?.provide.supabase.user.loggedIn).toBe(false);
+    sessionDeferred.resolve({
+      data: {
+        session: createSession(null),
+      },
+    });
+    await flushPlugin();
+    expect(authStateChangeCallback).toBeTypeOf('function');
+    authStateChangeCallback?.('SIGNED_IN', createSession('user-2'));
+    await flushPlugin();
+    expect(result?.provide.supabase.user.id).toBe('user-2');
+    expect(result?.provide.supabase.user.loggedIn).toBe(true);
+  });
   it('preserves scoped local state during auth user switches', async () => {
     const { getAuthStateChangeCallback, signInWithOAuth } = createClientMock('user-1');
     const plugin = (await import('@/plugins/supabase.client')).default;
