@@ -17,8 +17,10 @@
         />
       </AppTooltip>
       <!-- Center: Page Title -->
-      <span class="min-w-0 flex-1 truncate text-base font-semibold text-white">
-        {{ pageTitle }}
+      <span class="flex min-w-0 flex-1 items-center">
+        <span class="truncate text-base leading-none font-semibold text-white">
+          {{ pageTitle }}
+        </span>
       </span>
       <!-- Right: Status Icons & Settings -->
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
@@ -56,16 +58,16 @@
           </a>
         </AppTooltip>
         <label
-          class="focus-within:ring-primary-500 focus-within:ring-offset-surface-900 bg-surface-800/60 border-surface-700 flex items-center gap-1 rounded border px-2 focus-within:ring-2 focus-within:ring-offset-2"
+          class="focus-within:ring-primary-500 focus-within:ring-offset-surface-900 bg-surface-800/60 border-surface-700 flex min-h-8 items-center gap-1 rounded border px-2 focus-within:ring-2 focus-within:ring-offset-2"
         >
-          <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
+          <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4 shrink-0" />
           <span class="sr-only">{{ t('settings.locale') }}</span>
           <select
             id="app-locale-select"
             v-model="selectedLocale"
             :aria-label="t('settings.locale')"
             name="locale"
-            class="text-surface-200 bg-transparent py-1 text-xs font-medium focus:outline-none"
+            class="text-surface-200 h-6 bg-transparent py-1 text-xs leading-none font-medium focus:outline-none"
           >
             <option
               v-for="item in localeItems"
@@ -83,19 +85,19 @@
           <UDropdownMenu :items="accountMenuItems" :content="{ align: 'end', sideOffset: 8 }">
             <button
               type="button"
-              class="bg-surface-800/50 border-surface-600 hover:bg-surface-800 flex items-center gap-2 rounded-md border px-2.5 py-1.5 transition-colors"
+              class="bg-surface-800/50 border-surface-600 hover:bg-surface-800 flex min-h-8 items-center gap-2 rounded-md border px-2.5 py-1.5 transition-colors"
               :aria-label="t('navigation_drawer.account_menu')"
             >
               <img
                 :src="avatarSrc"
                 :alt="t('app_bar.user_avatar_alt')"
-                class="h-4 w-4 rounded-full"
+                class="h-4 w-4 shrink-0 rounded-full"
                 loading="lazy"
               />
-              <span class="text-surface-200 hidden text-sm font-medium sm:inline">
+              <span class="text-surface-200 hidden text-sm leading-none font-medium sm:inline">
                 {{ userDisplayName }}
               </span>
-              <UIcon name="i-mdi-chevron-down" class="text-surface-400 h-3.5 w-3.5" />
+              <UIcon name="i-mdi-chevron-down" class="text-surface-400 h-3.5 w-3.5 shrink-0" />
             </button>
           </UDropdownMenu>
         </template>
@@ -115,9 +117,9 @@
           </AppTooltip>
           <NuxtLink
             to="/login"
-            class="hover:bg-surface-700 hidden rounded px-2 py-1 text-sm text-white sm:inline-flex"
+            class="hover:bg-surface-700 hidden min-h-8 items-center rounded px-2 py-1 text-sm leading-none text-white sm:inline-flex"
           >
-            {{ t('navigation_drawer.login') }}
+            <span class="leading-none">{{ t('navigation_drawer.login') }}</span>
           </NuxtLink>
           <NuxtLink
             to="/login"

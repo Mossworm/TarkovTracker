@@ -308,6 +308,7 @@
         reputation: 'Réputation',
         reputation_input_label: 'Entrée de réputation',
         set_loyalty_level: 'Définir le niveau de fidélité {level}',
+        rep_progress_label: '→ LL{level}',
         scav_karma: 'Karma de Scav',
         unlock_required: 'Déblocage requis:',
       },

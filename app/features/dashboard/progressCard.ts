@@ -5,3 +5,4 @@ export type ProgressCardColor =
   | 'success'
   | 'kappa'
   | 'lightkeeper';
+export type ProgressBarColor = ProgressCardColor | 'locked';

@@ -308,6 +308,7 @@
         reputation: 'Ruf',
         reputation_input_label: 'Ruf-Eingabe',
         set_loyalty_level: 'Loyalitätsstufe {level} setzen',
+        rep_progress_label: '→ LL{level}',
         scav_karma: 'Scav-Karma',
         unlock_required: 'Freischaltung erforderlich:',
       },

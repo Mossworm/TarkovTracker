@@ -308,6 +308,7 @@
         reputation: 'Репутація',
         reputation_input_label: 'Поле введення репутації',
         set_loyalty_level: 'Встановити рівень лояльності {level}',
+        rep_progress_label: '→ LL{level}',
         scav_karma: 'Карма Дикого',
         unlock_required: 'Потрібно розблокувати:',
       },

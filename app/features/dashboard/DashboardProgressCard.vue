@@ -30,18 +30,7 @@
       </div>
       <div class="text-3xl font-bold" :class="percentageColorClass">{{ percentageDisplay }}%</div>
     </div>
-    <div class="bg-surface-700/50 relative h-2.5 overflow-hidden rounded-full">
-      <div
-        class="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ease-out"
-        :class="barGradientClass"
-        :style="{ width: `${percentage}%` }"
-        role="progressbar"
-        :aria-label="progressAriaLabel"
-        :aria-valuenow="percentage"
-        aria-valuemin="0"
-        aria-valuemax="100"
-      ></div>
-    </div>
+    <DashboardProgressBar :percentage="percentage" :color="color" :aria-label="progressAriaLabel" />
   </div>
 </template>
 <script setup lang="ts">
@@ -75,56 +64,49 @@
   );
   const colorClasses: Record<
     ProgressCardColor,
-    { hover: string; iconBg: string; icon: string; percentage: string; bar: string }
+    { hover: string; iconBg: string; icon: string; percentage: string }
   > = {
     primary: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-primary-600/15',
       icon: 'text-primary-400',
       percentage: 'text-primary-400',
-      bar: 'bg-primary-500',
     },
     neutral: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-surface-700',
       icon: 'text-surface-300',
       percentage: 'text-surface-50',
-      bar: 'bg-surface-400',
     },
     info: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-info-600/15',
       icon: 'text-info-400',
       percentage: 'text-info-400',
-      bar: 'bg-info-500',
     },
     success: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-success-600/15',
       icon: 'text-success-400',
       percentage: 'text-success-400',
-      bar: 'bg-success-500',
     },
     kappa: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-kappa-600/15',
       icon: 'text-kappa-400',
       percentage: 'text-kappa-400',
-      bar: 'bg-kappa-500',
     },
     lightkeeper: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-lightkeeper-600/15',
       icon: 'text-lightkeeper-400',
       percentage: 'text-lightkeeper-400',
-      bar: 'bg-lightkeeper-500',
     },
   };
   const hoverBorderClass = computed(() => colorClasses[props.color].hover);
   const iconBgClass = computed(() => colorClasses[props.color].iconBg);
   const iconColorClass = computed(() => colorClasses[props.color].icon);
   const percentageColorClass = computed(() => colorClasses[props.color].percentage);
-  const barGradientClass = computed(() => colorClasses[props.color].bar);
   const percentageDisplay = computed(() => props.percentage.toFixed(2));
   const completedDisplay = computed(() => formatNumber(props.completed));
   const totalDisplay = computed(() => formatNumber(props.total));
