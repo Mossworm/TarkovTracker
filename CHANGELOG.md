@@ -1,3 +1,10 @@
+## [1.23.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.23.2...v1.23.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* needed items filter tabs ([ab13d44](https://github.com/tarkovtracker-org/TarkovTracker/commit/ab13d44dda0138baa2dd13ac298ab31bfc78ca9a))
+
 ## [1.23.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.23.1...v1.23.2) (2026-03-13)
 
 
