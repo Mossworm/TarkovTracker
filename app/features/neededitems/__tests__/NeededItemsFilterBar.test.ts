@@ -12,6 +12,10 @@ const UInputStub = {
   template:
     '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 };
+const UIconStub = {
+  props: ['name'],
+  template: '<i :data-icon-name="name"></i>',
+};
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -59,13 +63,13 @@ const createDefaultGlobal = () => ({
     AppTooltip: { template: '<span><slot /></span>' },
     UBadge: true,
     UButton: UButtonStub,
-    UIcon: true,
+    UIcon: UIconStub,
     UInput: UInputStub,
     UTabs: {
-      props: ['items', 'modelValue'],
+      props: ['items', 'modelValue', 'variant'],
       emits: ['update:modelValue'],
       template:
-        '<div><button v-for="item in items" :key="item.value" @click="$emit(\'update:modelValue\', item.value)"><slot :item="item">{{ item.label }}</slot></button></div>',
+        '<div :data-variant="variant"><button v-for="item in items" :key="item.value" @click="$emit(\'update:modelValue\', item.value)"><i v-if="item.icon" :data-leading-icon="item.icon"></i><slot :item="item">{{ item.label }}</slot></button></div>',
     },
     UPopover: { template: '<div><slot /><slot name="content" /></div>' },
   },
@@ -100,5 +104,22 @@ describe('NeededItemsFilterBar', () => {
     // Trigger toggle and check emission
     await wrapper.find('button[data-icon="i-mdi-group"]').trigger('click');
     expect(wrapper.emitted('update:groupByItem')).toEqual([[true]]);
+  });
+  it('uses link tabs instead of the default pill variant', async () => {
+    const NeededItemsFilterBar = await setup();
+    const wrapper = mount(NeededItemsFilterBar, {
+      props: createDefaultProps(),
+      global: createDefaultGlobal(),
+    });
+    expect(wrapper.find('[data-variant]').attributes('data-variant')).toBe('link');
+  });
+  it('renders the filter icon only once per tab', async () => {
+    const NeededItemsFilterBar = await setup();
+    const wrapper = mount(NeededItemsFilterBar, {
+      props: createDefaultProps(),
+      global: createDefaultGlobal(),
+    });
+    expect(wrapper.findAll('[data-leading-icon="i-mdi-format-list-bulleted"]')).toHaveLength(1);
+    expect(wrapper.findAll('[data-icon-name="i-mdi-format-list-bulleted"]')).toHaveLength(0);
   });
 });

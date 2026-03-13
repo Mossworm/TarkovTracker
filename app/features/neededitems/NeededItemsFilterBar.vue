@@ -6,17 +6,19 @@
       :items="filterTabItems"
       :content="false"
       color="neutral"
+      variant="link"
       class="bg-surface-900 rounded-lg border border-white/12 px-3 py-2.5 shadow-sm sm:px-4 sm:py-3"
       :ui="{
         root: 'w-full',
-        list: 'flex flex-wrap items-center justify-center gap-1 sm:gap-2',
+        list: 'flex flex-wrap items-center justify-center gap-1 border-b-0 p-0 sm:gap-2',
+        indicator: 'hidden',
+        leadingIcon: 'h-4 w-4 sm:h-5 sm:w-5',
         trigger:
           'data-[state=active]:border-surface-200 data-[state=active]:bg-transparent data-[state=active]:text-white rounded-none border-b-2 border-transparent px-2 sm:px-3',
       }"
     >
       <template #default="{ item }">
         <div class="flex items-center">
-          <UIcon :name="item.icon" class="h-4 w-4 sm:mr-1 sm:h-5 sm:w-5" />
           <span class="hidden text-[clamp(0.625rem,2vw,0.875rem)] uppercase sm:inline">
             {{ item.label }}
           </span>
