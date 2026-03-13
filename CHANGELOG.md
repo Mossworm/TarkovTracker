@@ -1,3 +1,10 @@
+## [1.23.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.23.1...v1.23.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* improve Supabase runtime config handling ([b82066a](https://github.com/tarkovtracker-org/TarkovTracker/commit/b82066a52959d29e3803f415f8dc003840057bb8))
+
 ## [1.23.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.23.0...v1.23.1) (2026-03-13)
 
 
