@@ -131,17 +131,17 @@
               class="bg-surface-900/80 rounded-md border border-white/10 p-3"
             >
               <div class="mb-2 flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
+                <div class="flex min-w-0 items-center gap-2 leading-none">
                   <UIcon
                     :name="achievement.icon"
-                    class="h-4.5 w-4.5"
+                    class="h-4.5 w-4.5 shrink-0"
                     :class="achievement.iconClass"
                   />
-                  <span class="text-surface-100 text-sm font-medium">
+                  <span class="text-surface-100 truncate text-sm leading-none font-medium">
                     {{ achievement.title }}
                   </span>
                 </div>
-                <span class="text-surface-400 text-xs">
+                <span class="text-surface-400 shrink-0 text-xs leading-none">
                   {{ formatNumber(achievement.completed) }}/{{ formatNumber(achievement.total) }}
                 </span>
               </div>

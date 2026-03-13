@@ -66,14 +66,14 @@
         size="xs"
         color="neutral"
         variant="soft"
-        class="inline-flex max-w-40 shrink-0 cursor-help items-center gap-1 text-[11px]"
+        class="inline-flex max-w-40 shrink-0 cursor-help items-center gap-1 text-[11px] leading-none"
       >
         <UIcon
           :name="task?.map?.name ? 'i-mdi-map-marker' : 'i-mdi-earth'"
           aria-hidden="true"
-          class="h-3 w-3"
+          class="h-3 w-3 shrink-0"
         />
-        <span class="truncate">
+        <span class="truncate leading-none">
           {{ task?.map?.name || t('page.tasks.questcard.any_map') }}
         </span>
       </UBadge>
@@ -83,10 +83,10 @@
       size="xs"
       color="neutral"
       variant="soft"
-      class="shrink-0 cursor-help text-[11px]"
+      class="inline-flex shrink-0 cursor-help items-center gap-1 text-[11px] leading-none"
     >
-      <UIcon name="i-mdi-check-circle-outline" aria-hidden="true" class="h-3 w-3" />
-      <span class="truncate">
+      <UIcon name="i-mdi-check-circle-outline" aria-hidden="true" class="h-3 w-3 shrink-0" />
+      <span class="truncate leading-none">
         {{
           t('page.tasks.questcard.progress', {
             completed: props.progressCompleted,

@@ -39,9 +39,9 @@
       ></div>
     </div>
     <div v-if="isLocked && unlockTask" class="text-xs">
-      <div class="text-surface-300 mb-1 flex items-center gap-1">
-        <UIcon name="i-mdi-lock" class="h-3.5 w-3.5" />
-        <span>{{ $t('page.dashboard.traders.unlock_required') }}</span>
+      <div class="text-surface-300 mb-1 flex items-center gap-1 leading-none">
+        <UIcon name="i-mdi-lock" class="h-3.5 w-3.5 shrink-0" />
+        <span class="leading-none">{{ $t('page.dashboard.traders.unlock_required') }}</span>
       </div>
       <NuxtLink
         :to="{ path: '/tasks', query: { task: unlockTaskId } }"

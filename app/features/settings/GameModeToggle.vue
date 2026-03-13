@@ -2,7 +2,7 @@
   <div class="flex overflow-hidden rounded-md border border-white/10" role="group">
     <button
       type="button"
-      class="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase transition-colors"
+      class="flex min-h-8 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase transition-colors"
       :class="
         modelValue === GAME_MODES.PVP
           ? 'bg-pvp-800 text-pvp-100'
@@ -11,12 +11,12 @@
       :aria-pressed="modelValue === GAME_MODES.PVP"
       @click="setMode(GAME_MODES.PVP)"
     >
-      <UIcon name="i-mdi-sword-cross" class="h-3.5 w-3.5" />
-      {{ t('settings.game_settings.pvp') }}
+      <UIcon name="i-mdi-sword-cross" class="h-3.5 w-3.5 shrink-0" />
+      <span class="leading-none">{{ t('settings.game_settings.pvp') }}</span>
     </button>
     <button
       type="button"
-      class="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase transition-colors"
+      class="flex min-h-8 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase transition-colors"
       :class="
         modelValue === GAME_MODES.PVE
           ? 'bg-pve-600 text-white'
@@ -25,8 +25,8 @@
       :aria-pressed="modelValue === GAME_MODES.PVE"
       @click="setMode(GAME_MODES.PVE)"
     >
-      <UIcon name="i-mdi-account-group" class="h-3.5 w-3.5" />
-      {{ t('settings.game_settings.pve') }}
+      <UIcon name="i-mdi-account-group" class="h-3.5 w-3.5 shrink-0" />
+      <span class="leading-none">{{ t('settings.game_settings.pve') }}</span>
     </button>
   </div>
 </template>

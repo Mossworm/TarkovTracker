@@ -53,21 +53,21 @@
             >
               <button
                 type="button"
-                class="focus:ring-pvp-400 flex flex-1 items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none"
+                class="focus:ring-pvp-400 flex min-h-8 flex-1 items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none"
                 :class="pvpToggleClass"
                 @click="selectedMode = GAME_MODES.PVP"
               >
-                <UIcon name="i-mdi-sword-cross" class="h-3.5 w-3.5" />
-                PvP
+                <UIcon name="i-mdi-sword-cross" class="h-3.5 w-3.5 shrink-0" />
+                <span class="leading-none">PvP</span>
               </button>
               <button
                 type="button"
-                class="focus:ring-pve-400 flex flex-1 items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none"
+                class="focus:ring-pve-400 flex min-h-8 flex-1 items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none"
                 :class="pveToggleClass"
                 @click="selectedMode = GAME_MODES.PVE"
               >
-                <UIcon name="i-mdi-account-group" class="h-3.5 w-3.5" />
-                PvE
+                <UIcon name="i-mdi-account-group" class="h-3.5 w-3.5 shrink-0" />
+                <span class="leading-none">PvE</span>
               </button>
             </div>
             <div class="flex flex-wrap gap-2">

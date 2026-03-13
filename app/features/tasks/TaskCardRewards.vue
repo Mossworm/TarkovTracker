@@ -17,50 +17,64 @@
       @keydown.enter="toggleDetails"
       @keydown.space.prevent="toggleDetails"
     >
-      <span class="text-surface-500 font-bold tracking-wider uppercase">
-        <UIcon name="i-mdi-gift" aria-hidden="true" class="mr-1 inline h-3.5 w-3.5" />
-        {{ t('page.tasks.questcard.rewards') }}:
+      <span
+        class="text-surface-500 inline-flex items-center gap-1 leading-none font-bold tracking-wider uppercase"
+      >
+        <UIcon name="i-mdi-gift" aria-hidden="true" class="h-3.5 w-3.5 shrink-0" />
+        <span class="leading-none">{{ t('page.tasks.questcard.rewards') }}:</span>
       </span>
       <template v-for="standing in traderStandingRewards" :key="`standing-${standing.trader.id}`">
-        <div class="bg-surface-800 inline-flex items-center gap-1 rounded px-1.5 py-0.5">
-          <UIcon name="i-mdi-handshake" aria-hidden="true" class="text-surface-400 h-3.5 w-3.5" />
+        <div
+          class="bg-surface-800 inline-flex items-center gap-1 rounded px-1.5 py-0.5 leading-none"
+        >
+          <UIcon
+            name="i-mdi-handshake"
+            aria-hidden="true"
+            class="text-surface-400 h-3.5 w-3.5 shrink-0"
+          />
           <span
-            class="font-medium"
+            class="leading-none font-medium"
             :class="standing.standing >= 0 ? 'text-success-400' : 'text-error-400'"
           >
             {{ standing.standing >= 0 ? '+' : '' }}{{ standing.standing.toFixed(2) }}
           </span>
-          <span class="text-surface-100">{{ standing.trader.name }}</span>
+          <span class="text-surface-100 leading-none">{{ standing.trader.name }}</span>
         </div>
       </template>
       <template v-for="skill in skillRewards" :key="`skill-${skill.name}`">
-        <div class="inline-flex items-center gap-1">
-          <UIcon name="i-mdi-arm-flex" aria-hidden="true" class="text-secondary-400 h-3.5 w-3.5" />
-          <span class="text-secondary-300 font-medium">+{{ skill.level }}</span>
-          <span>{{ skill.name }}</span>
+        <div class="inline-flex items-center gap-1 leading-none">
+          <UIcon
+            name="i-mdi-arm-flex"
+            aria-hidden="true"
+            class="text-secondary-400 h-3.5 w-3.5 shrink-0"
+          />
+          <span class="text-secondary-300 leading-none font-medium">+{{ skill.level }}</span>
+          <span class="leading-none">{{ skill.name }}</span>
         </div>
       </template>
       <div
         v-if="displayedTraderUnlock?.name"
-        class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5 leading-none"
       >
         <UIcon
           name="i-mdi-lock-open-variant"
           aria-hidden="true"
-          class="text-warning-400 h-3.5 w-3.5"
+          class="text-warning-400 h-3.5 w-3.5 shrink-0"
         />
-        <span class="text-warning-300 font-medium">{{ displayedTraderUnlock.name }}</span>
+        <span class="text-warning-300 leading-none font-medium">
+          {{ displayedTraderUnlock.name }}
+        </span>
       </div>
       <div
         v-if="itemRewards.length > 0"
-        class="bg-success-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-success-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5 leading-none"
       >
         <UIcon
           name="i-mdi-package-variant"
           aria-hidden="true"
-          class="text-success-400 h-3.5 w-3.5"
+          class="text-success-400 h-3.5 w-3.5 shrink-0"
         />
-        <span class="text-success-300 font-medium">
+        <span class="text-success-300 leading-none font-medium">
           {{
             t(
               'page.tasks.questcard.items_count',
@@ -72,10 +86,14 @@
       </div>
       <div
         v-if="offerUnlockRewards.length > 0"
-        class="bg-info-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-info-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5 leading-none"
       >
-        <UIcon name="i-mdi-cart-check" aria-hidden="true" class="text-info-400 h-3.5 w-3.5" />
-        <span class="text-info-300 font-medium">
+        <UIcon
+          name="i-mdi-cart-check"
+          aria-hidden="true"
+          class="text-info-400 h-3.5 w-3.5 shrink-0"
+        />
+        <span class="text-info-300 leading-none font-medium">
           {{
             t(
               'page.tasks.questcard.unlocks_count',
@@ -87,10 +105,12 @@
       </div>
       <div
         v-if="showExperienceRewards && experienceValue > 0"
-        class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5 leading-none"
       >
-        <UIcon name="i-mdi-star" aria-hidden="true" class="text-warning-400 h-3.5 w-3.5" />
-        <span class="text-warning-300 font-medium">{{ formatNumber(experienceValue) }} XP</span>
+        <UIcon name="i-mdi-star" aria-hidden="true" class="text-warning-400 h-3.5 w-3.5 shrink-0" />
+        <span class="text-warning-300 leading-none font-medium">
+          {{ formatNumber(experienceValue) }} XP
+        </span>
       </div>
       <div class="hidden flex-1 sm:block"></div>
       <AppTooltip
@@ -98,10 +118,12 @@
         :text="t('page.tasks.questcard.unlocks_next_tooltip')"
       >
         <div
-          class="text-surface-400 border-surface-600 inline-flex cursor-help items-center gap-1 border-b border-dotted text-xs"
+          class="text-surface-400 border-surface-600 inline-flex cursor-help items-center gap-1 border-b border-dotted text-xs leading-none"
         >
-          <UIcon name="i-mdi-arrow-right-circle-outline" class="h-3.5 w-3.5" />
-          <span>{{ t('page.tasks.questcard.unlocks_next') }}: {{ unlocksNextCount }}</span>
+          <UIcon name="i-mdi-arrow-right-circle-outline" class="h-3.5 w-3.5 shrink-0" />
+          <span class="leading-none">
+            {{ t('page.tasks.questcard.unlocks_next') }}: {{ unlocksNextCount }}
+          </span>
         </div>
       </AppTooltip>
       <AppTooltip
@@ -109,10 +131,12 @@
         :text="t('page.tasks.questcard.impact_tooltip')"
       >
         <div
-          class="text-surface-400 border-surface-600 inline-flex cursor-help items-center gap-1 border-b border-dotted text-xs"
+          class="text-surface-400 border-surface-600 inline-flex cursor-help items-center gap-1 border-b border-dotted text-xs leading-none"
         >
-          <UIcon name="i-mdi-sitemap" class="h-3.5 w-3.5" />
-          <span>{{ t('page.tasks.questcard.impact') }}: {{ impactCount }}</span>
+          <UIcon name="i-mdi-sitemap" class="h-3.5 w-3.5 shrink-0" />
+          <span class="leading-none">
+            {{ t('page.tasks.questcard.impact') }}: {{ impactCount }}
+          </span>
         </div>
       </AppTooltip>
       <UIcon

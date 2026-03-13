@@ -17,8 +17,8 @@
       :color-class="props.colorClass"
       :has-margin="props.hasMargin"
     />
-    <span v-if="!props.isCollapsed" class="flex min-w-0 items-center gap-2">
-      <span class="truncate">{{ props.labelText }}</span>
+    <span v-if="!props.isCollapsed" class="flex min-w-0 items-center gap-2 leading-none">
+      <span class="truncate leading-none">{{ props.labelText }}</span>
       <span
         v-if="props.badge"
         class="bg-warning-500/20 text-warning-400 shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none font-bold uppercase"
@@ -42,8 +42,8 @@
       :color-class="props.colorClass"
       :has-margin="props.hasMargin"
     />
-    <span v-if="!props.isCollapsed" class="flex items-center gap-1 truncate">
-      {{ props.labelText }}
+    <span v-if="!props.isCollapsed" class="flex min-w-0 items-center gap-1 leading-none">
+      <span class="truncate leading-none">{{ props.labelText }}</span>
       <UIcon name="i-mdi-open-in-new" class="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
       <span class="sr-only">({{ $t('common.opens_in_new_tab') }})</span>
     </span>
@@ -61,7 +61,7 @@
       :color-class="props.colorClass"
       :has-margin="props.hasMargin"
     />
-    <span v-if="!props.isCollapsed" class="truncate">{{ props.labelText }}</span>
+    <span v-if="!props.isCollapsed" class="truncate leading-none">{{ props.labelText }}</span>
   </span>
 </template>
 <script setup lang="ts">

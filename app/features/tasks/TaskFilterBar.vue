@@ -33,13 +33,14 @@
           variant="ghost"
           color="neutral"
           size="sm"
+          class="leading-none"
           :aria-label="t('page.tasks.primary_views.all')"
           :aria-pressed="primaryView === 'all'"
           :class="primaryView === 'all' ? 'bg-white/10 text-white' : 'text-surface-200'"
           @click="setPrimaryView('all')"
         >
-          <UIcon name="i-mdi-checkbox-multiple-marked" class="h-4 w-4 sm:mr-1.5" />
-          <span class="hidden text-xs sm:inline">
+          <UIcon name="i-mdi-checkbox-multiple-marked" class="h-4 w-4 shrink-0 sm:mr-1.5" />
+          <span class="hidden text-xs leading-none sm:inline">
             {{ t('page.tasks.primary_views.all').toUpperCase() }}
           </span>
         </UButton>
@@ -47,13 +48,14 @@
           variant="ghost"
           color="neutral"
           size="sm"
+          class="leading-none"
           :aria-label="t('page.tasks.primary_views.traders')"
           :aria-pressed="primaryView === 'traders'"
           :class="primaryView === 'traders' ? 'bg-white/10 text-white' : 'text-surface-200'"
           @click="setPrimaryView('traders')"
         >
-          <UIcon name="i-mdi-account-group" class="h-4 w-4 sm:mr-1.5" />
-          <span class="hidden text-xs sm:inline">
+          <UIcon name="i-mdi-account-group" class="h-4 w-4 shrink-0 sm:mr-1.5" />
+          <span class="hidden text-xs leading-none sm:inline">
             {{ t('page.tasks.primary_views.traders').toUpperCase() }}
           </span>
         </UButton>
@@ -61,13 +63,14 @@
           variant="ghost"
           color="neutral"
           size="sm"
+          class="leading-none"
           :aria-label="t('page.tasks.primary_views.maps')"
           :aria-pressed="primaryView === 'maps'"
           :class="primaryView === 'maps' ? 'bg-white/10 text-white' : 'text-surface-200'"
           @click="setPrimaryView('maps')"
         >
-          <UIcon name="i-mdi-map" class="h-4 w-4 sm:mr-1.5" />
-          <span class="hidden text-xs sm:inline">
+          <UIcon name="i-mdi-map" class="h-4 w-4 shrink-0 sm:mr-1.5" />
+          <span class="hidden text-xs leading-none sm:inline">
             {{ t('page.tasks.primary_views.maps').toUpperCase() }}
           </span>
         </UButton>
@@ -75,14 +78,14 @@
           variant="ghost"
           color="neutral"
           size="sm"
+          class="hidden leading-none lg:inline-flex"
           :aria-label="t('page.tasks.primary_views.graph')"
           :aria-pressed="primaryView === 'graph'"
           :class="primaryView === 'graph' ? 'bg-white/10 text-white' : 'text-surface-200'"
-          class="hidden lg:inline-flex"
           @click="setPrimaryView('graph')"
         >
-          <UIcon name="i-mdi-graph-outline" class="h-4 w-4 sm:mr-1.5" />
-          <span class="hidden text-xs sm:inline">
+          <UIcon name="i-mdi-graph-outline" class="h-4 w-4 shrink-0 sm:mr-1.5" />
+          <span class="hidden text-xs leading-none sm:inline">
             {{ t('page.tasks.primary_views.graph').toUpperCase() }}
           </span>
         </UButton>
@@ -138,12 +141,16 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="secondaryView === 'all'"
             :class="secondaryView === 'all' ? 'bg-white/10 text-white' : 'text-surface-400'"
             @click="setSecondaryView('all')"
           >
-            <UIcon name="i-mdi-format-list-bulleted" class="hidden h-4 w-4 sm:mr-1 sm:block" />
-            <span class="text-xs sm:text-sm">
+            <UIcon
+              name="i-mdi-format-list-bulleted"
+              class="hidden h-4 w-4 shrink-0 sm:mr-1 sm:block"
+            />
+            <span class="text-xs leading-none sm:text-sm">
               {{ t('page.tasks.primary_views.all').toUpperCase() }}
             </span>
             <span
@@ -163,12 +170,13 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="secondaryView === 'available'"
             :class="secondaryView === 'available' ? 'bg-white/10 text-white' : 'text-surface-400'"
             @click="setSecondaryView('available')"
           >
-            <UIcon name="i-mdi-clipboard-text" class="hidden h-4 w-4 sm:mr-1 sm:block" />
-            <span class="text-xs sm:text-sm">
+            <UIcon name="i-mdi-clipboard-text" class="hidden h-4 w-4 shrink-0 sm:mr-1 sm:block" />
+            <span class="text-xs leading-none sm:text-sm">
               {{ t('page.tasks.secondary_views.available').toUpperCase() }}
             </span>
             <span
@@ -183,12 +191,13 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="secondaryView === 'locked'"
             :class="secondaryView === 'locked' ? 'bg-white/10 text-white' : 'text-surface-400'"
             @click="setSecondaryView('locked')"
           >
-            <UIcon name="i-mdi-lock" class="hidden h-4 w-4 sm:mr-1 sm:block" />
-            <span class="text-xs sm:text-sm">
+            <UIcon name="i-mdi-lock" class="hidden h-4 w-4 shrink-0 sm:mr-1 sm:block" />
+            <span class="text-xs leading-none sm:text-sm">
               {{ t('page.tasks.secondary_views.locked').toUpperCase() }}
             </span>
             <span
@@ -203,12 +212,13 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="secondaryView === 'completed'"
             :class="secondaryView === 'completed' ? 'bg-white/10 text-white' : 'text-surface-400'"
             @click="setSecondaryView('completed')"
           >
-            <UIcon name="i-mdi-check-circle" class="hidden h-4 w-4 sm:mr-1 sm:block" />
-            <span class="text-xs sm:text-sm">
+            <UIcon name="i-mdi-check-circle" class="hidden h-4 w-4 shrink-0 sm:mr-1 sm:block" />
+            <span class="text-xs leading-none sm:text-sm">
               {{ t('page.tasks.secondary_views.completed').toUpperCase() }}
             </span>
             <span
@@ -222,12 +232,13 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="secondaryView === 'failed'"
             :class="secondaryView === 'failed' ? 'bg-white/10 text-white' : 'text-surface-400'"
             @click="setSecondaryView('failed')"
           >
-            <UIcon name="i-mdi-close-circle" class="hidden h-4 w-4 sm:mr-1 sm:block" />
-            <span class="text-xs sm:text-sm">
+            <UIcon name="i-mdi-close-circle" class="hidden h-4 w-4 shrink-0 sm:mr-1 sm:block" />
+            <span class="text-xs leading-none sm:text-sm">
               {{ t('page.tasks.secondary_views.failed').toUpperCase() }}
             </span>
             <span
@@ -243,6 +254,7 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="preferencesStore.getTaskUserView === 'self'"
             :class="
               preferencesStore.getTaskUserView === 'self'
@@ -251,8 +263,8 @@
             "
             @click="onUserViewSelect({ label: currentUserDisplayName, value: 'self' })"
           >
-            <UIcon name="i-mdi-account-circle" class="h-4 w-4 sm:mr-1" />
-            <span class="hidden text-xs sm:inline sm:text-sm">
+            <UIcon name="i-mdi-account-circle" class="h-4 w-4 shrink-0 sm:mr-1" />
+            <span class="hidden text-xs leading-none sm:inline sm:text-sm">
               {{ currentUserDisplayName.toUpperCase() }}
             </span>
             <UBadge size="sm" color="primary" variant="solid" class="ml-1">
@@ -264,6 +276,7 @@
               variant="ghost"
               color="neutral"
               size="sm"
+              class="leading-none"
               :aria-pressed="preferencesStore.getTaskUserView === teamId"
               :class="[
                 preferencesStore.getTaskUserView === teamId
@@ -273,8 +286,8 @@
               ]"
               @click="onUserViewSelect({ label: getTeammateDisplayName(teamId), value: teamId })"
             >
-              <UIcon name="i-mdi-account" class="h-4 w-4 sm:mr-1" />
-              <span class="text-xs sm:text-sm">
+              <UIcon name="i-mdi-account" class="h-4 w-4 shrink-0 sm:mr-1" />
+              <span class="text-xs leading-none sm:text-sm">
                 {{ getTeammateDisplayName(teamId).toUpperCase() }}
               </span>
             </UButton>
@@ -294,6 +307,7 @@
             variant="ghost"
             color="neutral"
             size="sm"
+            class="leading-none"
             :aria-pressed="preferencesStore.getTaskUserView === 'all'"
             :class="
               preferencesStore.getTaskUserView === 'all'
@@ -302,8 +316,8 @@
             "
             @click="onUserViewSelect({ label: t('page.tasks.user_views.all'), value: 'all' })"
           >
-            <UIcon name="i-mdi-account-multiple" class="h-4 w-4 sm:mr-1" />
-            <span class="text-xs sm:text-sm">
+            <UIcon name="i-mdi-account-multiple" class="h-4 w-4 shrink-0 sm:mr-1" />
+            <span class="text-xs leading-none sm:text-sm">
               {{ t('page.tasks.user_views.all').toUpperCase() }}
             </span>
           </UButton>
