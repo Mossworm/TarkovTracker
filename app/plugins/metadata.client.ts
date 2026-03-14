@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
  * This ensures the store is properly initialized and data is fetched
  * when the application starts.
  */
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const metadataStore = useMetadataStore();
   if (process.env.NODE_ENV === 'test') {
     return {
@@ -76,13 +76,23 @@ export default defineNuxtPlugin(() => {
     });
     return initPromise;
   };
-  watch(
-    () => route.path,
-    (path) => {
-      void ensureMetadataInitialized(path);
-    },
-    { immediate: true }
-  );
+  let hasStartedWatchingRoute = false;
+  const startWatchingRoute = () => {
+    if (hasStartedWatchingRoute) return;
+    hasStartedWatchingRoute = true;
+    watch(
+      () => route.path,
+      (path) => {
+        void ensureMetadataInitialized(path);
+      },
+      { immediate: true }
+    );
+  };
+  if (typeof nuxtApp.hook === 'function') {
+    nuxtApp.hook('app:mounted', startWatchingRoute);
+  } else {
+    startWatchingRoute();
+  }
   return {
     provide: {
       metadata: metadataStore,

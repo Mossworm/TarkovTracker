@@ -42,9 +42,31 @@ describe('metadata plugin', () => {
   });
   it('does not retry metadata initialization after a permanent failure', async () => {
     const plugin = (await import('@/plugins/metadata.client')).default;
-    plugin({} as Parameters<typeof plugin>[0]);
+    const hooks = new Map<string, () => void>();
+    plugin({
+      hook(name: string, callback: () => void) {
+        hooks.set(name, callback);
+      },
+    } as Parameters<typeof plugin>[0]);
+    hooks.get('app:mounted')?.();
     await flushPromises();
     expect(metadataStoreMock.initialize).not.toHaveBeenCalled();
     expect(toastAdd).not.toHaveBeenCalled();
+  });
+  it('waits until app mount before starting metadata initialization', async () => {
+    metadataStoreMock.initializationFailed = false;
+    metadataStoreMock.initialize.mockResolvedValue(undefined);
+    const plugin = (await import('@/plugins/metadata.client')).default;
+    const hooks = new Map<string, () => void>();
+    plugin({
+      hook(name: string, callback: () => void) {
+        hooks.set(name, callback);
+      },
+    } as Parameters<typeof plugin>[0]);
+    await flushPromises();
+    expect(metadataStoreMock.initialize).not.toHaveBeenCalled();
+    hooks.get('app:mounted')?.();
+    await flushPromises();
+    expect(metadataStoreMock.initialize).toHaveBeenCalledTimes(1);
   });
 });
