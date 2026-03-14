@@ -505,6 +505,13 @@ describe('usePreferencesStore', () => {
       store.taskSecondaryView = 'available';
       expect(store.getTaskSecondaryView).toBe('available');
     });
+    it('should force graph secondary view to all without mutating the stored filter', () => {
+      const store = usePreferencesStore();
+      store.taskPrimaryView = 'graph';
+      store.taskSecondaryView = 'available';
+      expect(store.getTaskSecondaryView).toBe('all');
+      expect(store.taskSecondaryView).toBe('available');
+    });
     it('should return default "self" for null taskUserView', () => {
       const store = usePreferencesStore();
       expect(store.getTaskUserView).toBe('self');
@@ -870,6 +877,14 @@ describe('usePreferencesStore', () => {
       store.setTaskPrimaryView('maps');
       expect(store.taskPrimaryView).toBe('maps');
     });
+    it('should preserve the stored task status when switching to graph', () => {
+      const store = usePreferencesStore();
+      store.taskSecondaryView = 'locked';
+      store.setTaskPrimaryView('graph');
+      expect(store.taskPrimaryView).toBe('graph');
+      expect(store.taskSecondaryView).toBe('locked');
+      expect(store.getTaskSecondaryView).toBe('all');
+    });
     it('should set task map view', () => {
       const store = usePreferencesStore();
       store.setTaskMapView('customs');
@@ -884,6 +899,13 @@ describe('usePreferencesStore', () => {
       const store = usePreferencesStore();
       store.setTaskSecondaryView('available');
       expect(store.taskSecondaryView).toBe('available');
+    });
+    it('should restore the saved task status after leaving graph', () => {
+      const store = usePreferencesStore();
+      store.taskSecondaryView = 'locked';
+      store.setTaskPrimaryView('graph');
+      store.setTaskPrimaryView('all');
+      expect(store.getTaskSecondaryView).toBe('locked');
     });
     it('should set task user view', () => {
       const store = usePreferencesStore();

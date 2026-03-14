@@ -3,7 +3,11 @@ import 'pinia-plugin-persistedstate';
 import { clearPreferencesStorage } from '@/utils/clientStorage';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
-import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
+import {
+  getTaskSecondaryViewForPrimaryView,
+  normalizeSecondaryView,
+  normalizeSortMode,
+} from '@/utils/taskFilterNormalization';
 import {
   MAP_MARKER_COLORS,
   migrateLegacyMapMarkerColors,
@@ -431,7 +435,10 @@ export const usePreferencesStore = defineStore('preferences', {
       return state.taskTraderView ?? 'all';
     },
     getTaskSecondaryView: (state) => {
-      return normalizeSecondaryView(state.taskSecondaryView ?? 'available');
+      return getTaskSecondaryViewForPrimaryView(
+        state.taskPrimaryView,
+        state.taskSecondaryView ?? 'available'
+      );
     },
     getTaskUserView: (state) => {
       return state.taskUserView ?? 'self';

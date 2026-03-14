@@ -23,6 +23,7 @@ type SetupOptions = {
     getTaskUserView: string;
     getTaskMapView: string;
     getTaskTraderView: string;
+    getShowAllFilter: boolean;
     getHideCompletedMapObjectives: boolean;
     taskTeamAllHidden: boolean;
   }>;
@@ -275,6 +276,22 @@ describe('TaskFilterBar', () => {
     expect(availableButton).toBeTruthy();
     expect(availableButton!.text()).toContain('0');
     expect(availableButton!.text()).not.toContain('1');
+  });
+  it('forces graph view to show only the all status filter', async () => {
+    const { TaskFilterBar } = await setup({
+      preferencesStore: {
+        getTaskPrimaryView: 'graph',
+        getTaskSecondaryView: 'available',
+        getShowAllFilter: false,
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    const buttonTexts = wrapper.findAll('button').map((button) => button.text());
+    expect(buttonTexts.some((text) => text.includes('AVAILABLE'))).toBe(false);
+    expect(buttonTexts.some((text) => text.includes('LOCKED'))).toBe(false);
+    expect(buttonTexts.some((text) => text.includes('COMPLETED'))).toBe(false);
+    expect(buttonTexts.some((text) => text.includes('FAILED'))).toBe(false);
+    expect(buttonTexts.some((text) => text.includes('ALL2'))).toBe(true);
   });
   it('keeps persisted teammate view while roster is still loading', async () => {
     const { TaskFilterBar, preferencesStore } = await setup({

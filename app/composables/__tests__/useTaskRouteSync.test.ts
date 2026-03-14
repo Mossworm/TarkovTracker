@@ -111,7 +111,7 @@ describe('useTaskRouteSync', () => {
           return storeState.taskTraderView;
         },
         get getTaskSecondaryView() {
-          return storeState.taskSecondaryView;
+          return storeState.taskPrimaryView === 'graph' ? 'all' : storeState.taskSecondaryView;
         },
         get getTaskSortMode() {
           return storeState.taskSortMode;
@@ -177,6 +177,25 @@ describe('useTaskRouteSync', () => {
     const wrapper = mount(TestHarness);
     await flushRouteSync();
     expect(setTaskSecondaryView).toHaveBeenCalledWith('locked');
+    wrapper.unmount();
+  });
+  it('preserves the stored status filter when graph view is loaded', async () => {
+    applyRouteQuery({ view: 'graph', status: 'available' });
+    const maps = ref<TarkovMap[]>([]);
+    const traders = ref<Trader[]>([{ id: 'trader-1', name: 'Trader One' } as Trader]);
+    const { useTaskRouteSync } = await import('@/composables/useTaskRouteSync');
+    const TestHarness = defineComponent({
+      setup() {
+        useTaskRouteSync({ maps, traders });
+        return () => h('div');
+      },
+    });
+    const wrapper = mount(TestHarness);
+    await flushRouteSync();
+    expect(setTaskPrimaryView).toHaveBeenCalledWith('graph');
+    expect(setTaskSecondaryView).not.toHaveBeenCalled();
+    expect(storeState.taskSecondaryView).toBe('available');
+    expect(routeState.query.status).toBe('all');
     wrapper.unmount();
   });
 });

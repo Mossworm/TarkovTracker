@@ -1,4 +1,8 @@
-import { TASK_SECONDARY_VIEWS, type TaskSecondaryView } from '@/types/taskFilter';
+import {
+  TASK_SECONDARY_VIEWS,
+  type TaskPrimaryView,
+  type TaskSecondaryView,
+} from '@/types/taskFilter';
 import { TASK_SORT_MODES, type TaskSortMode } from '@/types/taskSort';
 export const VALID_SORT_MODES = new Set<TaskSortMode>(TASK_SORT_MODES);
 export const VALID_SECONDARY_VIEWS = new Set<TaskSecondaryView>(TASK_SECONDARY_VIEWS);
@@ -24,4 +28,13 @@ export const normalizeSecondaryView = (value: unknown): TaskSecondaryView => {
     return candidate as TaskSecondaryView;
   }
   return 'all';
+};
+export const getTaskSecondaryViewForPrimaryView = (
+  primaryView: TaskPrimaryView | string | null | undefined,
+  value: unknown
+): TaskSecondaryView => {
+  if (primaryView === 'graph') {
+    return 'all';
+  }
+  return normalizeSecondaryView(value);
 };

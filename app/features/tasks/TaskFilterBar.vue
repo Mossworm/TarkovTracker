@@ -137,7 +137,7 @@
       >
         <div class="flex shrink-0 items-center gap-1">
           <UButton
-            v-if="preferencesStore.getShowAllFilter"
+            v-if="showAllStatusButton"
             variant="ghost"
             color="neutral"
             size="sm"
@@ -166,7 +166,7 @@
             class="bg-surface-700/60 h-6 w-px self-center"
           ></span>
           <UButton
-            v-if="preferencesStore.getShowAvailableFilter"
+            v-if="!isGraphView && preferencesStore.getShowAvailableFilter"
             variant="ghost"
             color="neutral"
             size="sm"
@@ -187,7 +187,7 @@
             </span>
           </UButton>
           <UButton
-            v-if="preferencesStore.getShowLockedFilter"
+            v-if="!isGraphView && preferencesStore.getShowLockedFilter"
             variant="ghost"
             color="neutral"
             size="sm"
@@ -208,7 +208,9 @@
             </span>
           </UButton>
           <UButton
-            v-if="preferencesStore.getShowCompletedFilter && statusCounts.completed > 0"
+            v-if="
+              !isGraphView && preferencesStore.getShowCompletedFilter && statusCounts.completed > 0
+            "
             variant="ghost"
             color="neutral"
             size="sm"
@@ -228,7 +230,7 @@
             </span>
           </UButton>
           <UButton
-            v-if="preferencesStore.getShowFailedFilter && statusCounts.failed > 0"
+            v-if="!isGraphView && preferencesStore.getShowFailedFilter && statusCounts.failed > 0"
             variant="ghost"
             color="neutral"
             size="sm"
@@ -418,7 +420,11 @@
   import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTeamStore } from '@/stores/useTeamStore';
   import { TASK_SORT_MODES } from '@/types/taskSort';
-  import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
+  import {
+    getTaskSecondaryViewForPrimaryView,
+    normalizeSecondaryView,
+    normalizeSortMode,
+  } from '@/utils/taskFilterNormalization';
   import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
   const props = defineProps<{
     searchQuery: string;
@@ -437,11 +443,15 @@
   const { isOpen: isDrawerOpen, toggle: toggleDrawer } = useTaskSettingsDrawer();
   const { calculateMapTaskTotals, calculateStatusCounts, calculateTraderCounts } =
     useTaskFiltering();
+  const primaryView = computed(() => preferencesStore.getTaskPrimaryView);
+  const isGraphView = computed(() => primaryView.value === 'graph');
   const maps = computed(() => metadataStore.mapsWithSvg);
+  const secondaryView = computed(() =>
+    getTaskSecondaryViewForPrimaryView(primaryView.value, preferencesStore.getTaskSecondaryView)
+  );
   const traderCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
-    const secondaryView = normalizeSecondaryView(preferencesStore.getTaskSecondaryView);
-    return calculateTraderCounts(userView, secondaryView);
+    return calculateTraderCounts(userView, secondaryView.value);
   });
   const traders = computed(() => {
     return metadataStore.sortedTraders.filter((trader) => (traderCounts.value[trader.id] ?? 0) > 0);
@@ -461,13 +471,17 @@
   });
   const showStatusAllDivider = computed(() => {
     return (
-      preferencesStore.getShowAllFilter &&
+      showAllStatusButton.value &&
+      !isGraphView.value &&
       (preferencesStore.getShowAvailableFilter ||
         preferencesStore.getShowLockedFilter ||
         preferencesStore.getShowCompletedFilter ||
         preferencesStore.getShowFailedFilter)
     );
   });
+  const showAllStatusButton = computed(
+    () => isGraphView.value || preferencesStore.getShowAllFilter
+  );
   // Helper to get teammate display name
   const getTeammateDisplayName = (teamId: string): string => {
     return progressStore.getDisplayName(teamId);
@@ -574,7 +588,6 @@
     );
   });
   // Primary view (all / maps / traders)
-  const primaryView = computed(() => preferencesStore.getTaskPrimaryView);
   const ensureSelectedTrader = (visibleTraders: Array<{ id: string }>) => {
     if (!visibleTraders.length) return;
     const hasSelectedTrader = visibleTraders.some(
@@ -600,11 +613,8 @@
     }
   };
   // Secondary view (available / locked / completed)
-  const secondaryView = computed(() =>
-    normalizeSecondaryView(preferencesStore.getTaskSecondaryView)
-  );
   const setSecondaryView = (view: string) => {
-    const normalizedView = normalizeSecondaryView(view);
+    const normalizedView = getTaskSecondaryViewForPrimaryView(primaryView.value, view);
     preferencesStore.setTaskSecondaryView(normalizedView);
   };
   // Map selection

@@ -306,6 +306,18 @@ describe('tasks page', () => {
   it('renders task filter bar', async () => {
     expect(wrapper.find('[data-testid="task-filter"]').exists()).toBe(true);
   });
+  it('uses the all status filter for graph visibility without overwriting the stored filter', async () => {
+    preferencesStoreMock.getTaskPrimaryView = 'graph';
+    preferencesStoreMock.getTaskSecondaryView = 'available';
+    await mountPage();
+    expect(updateVisibleTasksMock).toHaveBeenCalled();
+    const latestCall = updateVisibleTasksMock.mock.calls.at(-1);
+    expect(latestCall?.[0]).toMatchObject({
+      primaryView: 'graph',
+      secondaryView: 'all',
+    });
+    expect(preferencesStoreMock.getTaskSecondaryView).toBe('available');
+  });
   it('keeps initial task slice when tasks arrive after mount', async () => {
     visibleTasksRef.value = [];
     await mountPage();

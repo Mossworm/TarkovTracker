@@ -383,6 +383,7 @@
   import { debounce, isDebounceRejection } from '@/utils/debounce';
   import { logger } from '@/utils/logger';
   import { STATIC_TIME_MAPS, resolveStaticDisplayTime } from '@/utils/mapTime';
+  import { getTaskSecondaryViewForPrimaryView } from '@/utils/taskFilterNormalization';
   import { buildTaskTypeFilterOptions, filterTasksByTypeSettings } from '@/utils/taskTypeFilters';
   import type { TaskActionPayload } from '@/composables/useTaskActions';
   import type { Task } from '@/types/tarkov';
@@ -719,9 +720,12 @@
       mergedIds: (map as unknown as { mergedIds?: string[] }).mergedIds || [map.id],
     }));
   });
+  const effectiveTaskSecondaryView = computed(() =>
+    getTaskSecondaryViewForPrimaryView(getTaskPrimaryView.value, getTaskSecondaryView.value)
+  );
   const mapTaskVisibilityFilterOptions = computed<TaskFilterAndSortOptions>(() => ({
     primaryView: getTaskPrimaryView.value as TaskPrimaryView,
-    secondaryView: getTaskSecondaryView.value as TaskSecondaryView,
+    secondaryView: effectiveTaskSecondaryView.value as TaskSecondaryView,
     userView: getTaskUserView.value,
     mapView: getTaskMapView.value,
     traderView: getTaskTraderView.value,

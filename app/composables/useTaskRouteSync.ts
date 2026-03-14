@@ -5,6 +5,7 @@ import { isValidPrimaryView, isValidSecondaryView } from '@/types/taskFilter';
 import { isValidSortDirection, isValidSortMode } from '@/types/taskSort';
 import { logger } from '@/utils/logger';
 import { getQueryString } from '@/utils/routeHelpers';
+import { getTaskSecondaryViewForPrimaryView } from '@/utils/taskFilterNormalization';
 import type { Ref } from '#imports';
 import type { TarkovMap, Trader } from '@/types/tarkov';
 import type { TaskPrimaryView } from '@/types/taskFilter';
@@ -105,7 +106,7 @@ export function useTaskRouteSync({
       if (targetView !== preferencesStore.getTaskPrimaryView) {
         preferencesStore.setTaskPrimaryView(targetView);
       }
-      if (values.status !== preferencesStore.getTaskSecondaryView) {
+      if (targetView !== 'graph' && values.status !== preferencesStore.getTaskSecondaryView) {
         preferencesStore.setTaskSecondaryView(values.status);
       }
       if (targetView === 'maps') {
@@ -140,6 +141,10 @@ export function useTaskRouteSync({
     },
     onStoreToRoute: () => {
       const primaryView = getTaskPrimaryView.value;
+      const secondaryView = getTaskSecondaryViewForPrimaryView(
+        primaryView,
+        getTaskSecondaryView.value
+      );
       const routeMap = getQueryString(route.query.map);
       const routeTrader = getQueryString(route.query.trader);
       const shouldDelayMap = primaryView === 'maps' && maps.value.length === 0 && !!routeMap;
@@ -149,7 +154,7 @@ export function useTaskRouteSync({
         !!routeTrader;
       return {
         view: primaryView,
-        status: getTaskSecondaryView.value,
+        status: secondaryView,
         map: shouldDelayMap ? routeMap : getTaskMapView.value,
         trader: shouldDelayTrader ? routeTrader : getTaskTraderView.value,
         sort: getTaskSortMode.value,
