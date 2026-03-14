@@ -80,9 +80,10 @@ export default defineNuxtPlugin(() => {
     window.dataLayer = window.dataLayer || [];
     window.gtag =
       window.gtag ||
-      ((...args: unknown[]) => {
-        window.dataLayer?.push(args);
-      });
+      function () {
+        // eslint-disable-next-line prefer-rest-params
+        window.dataLayer?.push(arguments);
+      };
     await loadScript();
     window.gtag('js', new Date());
     window.gtag('config', measurementId, {

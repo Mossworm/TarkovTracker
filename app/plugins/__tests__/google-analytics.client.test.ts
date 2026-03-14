@@ -30,9 +30,17 @@ vi.mock('@/utils/logger', () => ({
     warn: vi.fn(),
   },
 }));
+const getNormalizedDataLayer = () => {
+  return (window.dataLayer || []).map((entry) => {
+    if (Array.isArray(entry) || Object.prototype.toString.call(entry) === '[object Arguments]') {
+      return Array.from(entry as ArrayLike<unknown>);
+    }
+    return entry;
+  });
+};
 const expectAnalyticsInitialized = (measurementId: string) => {
   expect(window.gtag).toBeTypeOf('function');
-  expect(window.dataLayer).toEqual(
+  expect(getNormalizedDataLayer()).toEqual(
     expect.arrayContaining([
       ['js', expect.any(Date)],
       [
