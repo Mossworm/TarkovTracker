@@ -1,3 +1,10 @@
+## [1.25.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.25.4...v1.25.5) (2026-03-14)
+
+
+### Bug Fixes
+
+* clone reactive preferences state safely ([27e47b4](https://github.com/tarkovtracker-org/TarkovTracker/commit/27e47b4c39273004c8ef838c37bd240bace2a43e))
+
 ## [1.25.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.25.3...v1.25.4) (2026-03-14)
 
 
