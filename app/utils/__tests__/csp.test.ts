@@ -54,8 +54,12 @@ describe('nuxt.config CSP', () => {
     });
     expect(getDirectiveSources(csp, 'default-src')).toEqual(["'self'"]);
     expect(getDirectiveSources(csp, 'script-src')).toContain("'unsafe-inline'");
+    expect(getDirectiveSources(csp, 'script-src')).toContain(
+      'https://static.cloudflareinsights.com'
+    );
     expect(getDirectiveSources(csp, 'script-src')).toContain('https://*.googletagmanager.com');
     expect(getDirectiveSources(csp, 'script-src')).toContain('https://*.clarity.ms');
+    expect(getDirectiveSources(csp, 'connect-src')).toContain('https://cloudflareinsights.com');
     expect(getDirectiveSources(csp, 'connect-src')).toContain('https://db.example.com');
     expect(getDirectiveSources(csp, 'connect-src')).toContain('https://team.example.com');
     expect(getDirectiveSources(csp, 'img-src')).toContain('https:');

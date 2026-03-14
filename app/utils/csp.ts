@@ -63,6 +63,7 @@ export const getScriptSrcSources = (options: ContentSecurityPolicyOptions = {}):
   return getUniqueSources([
     "'self'",
     options.allowUnsafeInlineScripts ? "'unsafe-inline'" : null,
+    'https://static.cloudflareinsights.com',
     hasGoogleAnalytics ? 'https://*.googletagmanager.com' : null,
     hasMicrosoftClarity ? 'https://*.clarity.ms' : null,
     hasMicrosoftClarity ? 'https://c.bing.com' : null,
@@ -73,6 +74,7 @@ export const getConnectSrcSources = (options: ContentSecurityPolicyOptions = {})
   const hasMicrosoftClarity = hasConfiguredValue(options.clarityInstrumentationKey);
   return getUniqueSources([
     "'self'",
+    'https://cloudflareinsights.com',
     hasGoogleAnalytics ? 'https://*.googletagmanager.com' : null,
     hasGoogleAnalytics ? 'https://*.google-analytics.com' : null,
     hasGoogleAnalytics ? 'https://*.analytics.google.com' : null,
