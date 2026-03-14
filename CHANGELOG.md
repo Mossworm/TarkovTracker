@@ -1,3 +1,10 @@
+## [1.25.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.25.2...v1.25.3) (2026-03-14)
+
+
+### Bug Fixes
+
+* **csp:** allow cloudflare analytics ([55838b9](https://github.com/tarkovtracker-org/TarkovTracker/commit/55838b983e34e590ca1d90ae09d026fc620e487c))
+
 ## [1.25.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.25.1...v1.25.2) (2026-03-14)
 
 
