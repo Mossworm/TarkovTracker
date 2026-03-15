@@ -1,3 +1,10 @@
+## [1.27.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.27.0...v1.27.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* reduce tasks page layout shifts ([7af3cfa](https://github.com/tarkovtracker-org/TarkovTracker/commit/7af3cfa6dce03445de72dbd38c005aa69a7e26ed))
+
 # [1.27.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.26.1...v1.27.0) (2026-03-15)
 
 
