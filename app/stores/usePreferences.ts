@@ -223,12 +223,15 @@ const initialSavingState = {
 };
 export type PersistedPreferencesState = Partial<Omit<PreferencesState, 'saving'>>;
 type PersistedPreferencesStateWithLegacy = PersistedPreferencesState & {
+  neededItemsHideCollected?: boolean;
   onlyTasksWithSuggestedKeys?: boolean;
 };
-const hasLegacyOnlyTasksWithSuggestedKeys = (
+const requiresLegacyPreferencesMigration = (
   persistedState: PersistedPreferencesStateWithLegacy
 ): boolean => {
-  return 'onlyTasksWithSuggestedKeys' in persistedState;
+  return (
+    'neededItemsHideCollected' in persistedState || 'onlyTasksWithSuggestedKeys' in persistedState
+  );
 };
 const clonePreferencesSnapshot = <T>(value: T): T => {
   const rawValue = value !== null && typeof value === 'object' ? toRaw(value) : value;
@@ -244,8 +247,7 @@ const sanitizePersistedPreferencesState = (
   const sanitizedState = clonePreferencesSnapshot(
     persistedState
   ) as PersistedPreferencesStateWithLegacy;
-  const legacyHideCollected = (sanitizedState as Record<string, unknown>)
-    .neededItemsHideCollected as boolean | undefined;
+  const legacyHideCollected = sanitizedState.neededItemsHideCollected;
   if (
     typeof sanitizedState.neededItemsHideOwned !== 'boolean' &&
     typeof legacyHideCollected === 'boolean'
@@ -253,7 +255,7 @@ const sanitizePersistedPreferencesState = (
     sanitizedState.neededItemsHideOwned = legacyHideCollected;
   }
   if ('neededItemsHideCollected' in sanitizedState) {
-    delete (sanitizedState as Record<string, unknown>).neededItemsHideCollected;
+    delete sanitizedState.neededItemsHideCollected;
   }
   if (
     typeof sanitizedState.onlyTasksWithRequiredKeys !== 'boolean' &&
@@ -331,12 +333,11 @@ export const readPersistedPreferencesSnapshot = (
     if (wrapped._userId !== userId || !isPersistedPreferencesStateRecord(wrapped.data)) {
       return null;
     }
-    const requiresStorageMigration = hasLegacyOnlyTasksWithSuggestedKeys(
-      wrapped.data as PersistedPreferencesStateWithLegacy
-    );
+    const persistedStateWithLegacy = wrapped.data as PersistedPreferencesStateWithLegacy;
+    const requiresStorageMigration = requiresLegacyPreferencesMigration(persistedStateWithLegacy);
     return {
       ownerUserId: wrapped._userId,
-      state: sanitizePersistedPreferencesState(wrapped.data as PersistedPreferencesStateWithLegacy),
+      state: sanitizePersistedPreferencesState(persistedStateWithLegacy),
       requiresStorageMigration: requiresStorageMigration || undefined,
     };
   }

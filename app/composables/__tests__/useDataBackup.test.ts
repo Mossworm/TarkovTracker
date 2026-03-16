@@ -309,7 +309,7 @@ describe('useDataBackup', () => {
           pmcFaction: 'USEC',
           displayName: 'ProxyPlayer',
           xpOffset: 0,
-          taskCompletions: {},
+          taskCompletions: { task1: { complete: true, timestamp: 1000 } },
           taskObjectives: {},
           hideoutParts: {},
           hideoutModules: {},
@@ -449,12 +449,12 @@ describe('useDataBackup', () => {
         expect(debugJson.state.tarkov.tarkovUid).toBeNull();
         expect(debugJson.state.tarkov.pvp.displayName).toBeNull();
         expect(debugJson.state.preferences.taskUserView).toMatch(/^user:(sha256|fnv1a):/);
+        const firstTeamHideKey = Object.keys(debugJson.state.preferences.teamHide)[0];
+        expect(firstTeamHideKey).toBeDefined();
         expect(debugJson.state.preferences.teamHide).toEqual({
-          [Object.keys(debugJson.state.preferences.teamHide)[0]]: true,
+          [firstTeamHideKey!]: true,
         });
-        expect(Object.keys(debugJson.state.preferences.teamHide)[0]).toMatch(
-          /^user:(sha256|fnv1a):/
-        );
+        expect(firstTeamHideKey).toMatch(/^user:(sha256|fnv1a):/);
         expect(debugJson.state.preferences.taskFilterPresets[0]).toEqual(
           expect.objectContaining({
             name: 'Preset 1',
@@ -467,7 +467,8 @@ describe('useDataBackup', () => {
         expect(debugJson.storage.localStorageKeys).not.toContain('sb-localhost-auth-token');
         expect(typeof debugJson.storage.progress.ownerMatchesCurrentUser).toBe('boolean');
         expect(debugJson.storage.progress.ownerUserFingerprint).toMatch(/^(sha256|fnv1a):/);
-        expect(debugJson.storage.progressBackups[0].storageKey).toContain('{owner:');
+        expect(debugJson.storage.progressBackups).toHaveLength(1);
+        expect(debugJson.storage.progressBackups[0]!.storageKey).toContain('{owner:');
         expect(debugText).not.toContain('player@example.com');
         expect(debugText).not.toContain('token-secret');
         expect(debugText).not.toContain('user-123');
