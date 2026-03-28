@@ -195,6 +195,9 @@
 - **Self-assess code**. Don't ask "what does this do?" Read and understand it. Only clarify ambiguous intent ("Is this supposed to do X or Y?").
 - **Ask before acting on complex requests**. Clarify ambiguous or multi-interpretation tasks before proceeding—it's better to ask one question than redo work.
 - **Check before isolating workspace.** Inspect the current branch, working tree, and existing worktrees first; reuse or continue when clearly appropriate, and ask before creating a new worktree when there is any ambiguity.
+- **Use allowed commit scopes.** When creating commits, use the scopes listed in `commitlint.config.js`: `app`, `workers`, `api`, `ui`, `tasks`, `hideout`, `maps`, `team`, `settings`, `admin`, `i18n`, `deps`, `config`, `ci`, `test`, `docs`, `release`.
+- **Do not invent new scopes.** If a change does not fit an allowed scope cleanly, omit the scope instead of using an unrecognized one.
+- **Map common cases consistently.** Use `ui` for theme/styling/shell work and `docs` for repository/process documentation such as `AGENTS.md`.
 - **Never run destructive git commands without explicit user approval in the current conversation**. This includes `git restore`, `git checkout --`, `git reset` (any mode), `git clean`, and force-push operations. Always ask first.
 
 ## Git Workspace Isolation
