@@ -60,6 +60,14 @@ export function useOverlayFocusTrap({ containerRef, isOverlayMode }: UseOverlayF
     storeTriggerElement();
     void focusContainer();
   });
+  watch(
+    () => isOverlayMode.value,
+    (isOverlay, wasOverlay) => {
+      if (!isOverlay || wasOverlay) return;
+      storeTriggerElement();
+      void focusContainer();
+    }
+  );
   return {
     restoreTriggerFocus,
     trapFocus,

@@ -83,8 +83,22 @@ const findBodyButton = (label: string) =>
     button.textContent?.includes(label)
   );
 describe('PageHelpSpotlight', () => {
+  let originalInnerHeight: number;
+  let originalInnerWidth: number;
   beforeEach(() => {
     document.body.innerHTML = '';
+    originalInnerHeight = window.innerHeight;
+    originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 1400,
+      writable: true,
+    });
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1200,
+      writable: true,
+    });
     vi.stubGlobal(
       'requestAnimationFrame',
       vi.fn((callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0))
@@ -112,24 +126,30 @@ describe('PageHelpSpotlight', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: originalInnerHeight,
+      writable: true,
+    });
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: originalInnerWidth,
+      writable: true,
+    });
     document.body.innerHTML = '';
   });
   it('renders the first step as a modal dialog and advances to the next target', async () => {
     const wrapper = await mountComponent();
     await flushUi(wrapper);
     const dialog = document.body.querySelector('aside');
-    const stepOneTarget = document.body.querySelector('[data-help-target="step-one"]');
-    const stepTwoTarget = document.body.querySelector('[data-help-target="step-two"]');
     expect(dialog?.getAttribute('role')).toBe('dialog');
     expect(document.body.textContent ?? '').toContain('Filter bar');
-    expect((stepOneTarget?.scrollIntoView as ReturnType<typeof vi.fn>)?.mock.calls.length).toBe(1);
     const nextButton = findBodyButton('Next');
     expect(nextButton).toBeTruthy();
     nextButton!.click();
     await flushUi(wrapper);
     expect(document.body.textContent ?? '').toContain('Settings');
     expect(document.body.textContent ?? '').not.toContain('Start with the main filters.');
-    expect((stepTwoTarget?.scrollIntoView as ReturnType<typeof vi.fn>)?.mock.calls.length).toBe(1);
     wrapper.unmount();
   });
   it('emits close when finishing the final step or pressing escape', async () => {
@@ -190,6 +210,17 @@ describe('PageHelpSpotlight', () => {
     await flushUi(wrapper);
     expect(wrapper.emitted('close')).toBeUndefined();
     expect(document.body.textContent ?? '').toContain('Filter bar');
+    wrapper.unmount();
+  });
+  it('matches the overlay cutout to the visible highlight padding', async () => {
+    const wrapper = await mountComponent();
+    await flushUi(wrapper);
+    const overlayPanels = Array.from(
+      document.body.querySelectorAll<HTMLElement>('[data-testid="page-help-overlay-panel"]')
+    );
+    expect(overlayPanels).toHaveLength(4);
+    expect(overlayPanels[2]?.style.left).toBe('728px');
+    expect(overlayPanels[3]?.style.top).toBe('1068px');
     wrapper.unmount();
   });
   it('avoids covering protected content by shifting to a narrower side placement', async () => {

@@ -22,6 +22,7 @@
                       :color="'neutral'"
                       size="md"
                       :data-help-target="`hideout-filter-${view.view}`"
+                      :aria-pressed="displayPrimaryView === view.view"
                       class="shrink-0"
                       :class="{
                         'border-surface-200 rounded-none border-b-2':
@@ -136,7 +137,7 @@
           >
             <div
               v-for="(hStation, hIndex) in visibleStationsSlice"
-              :key="hIndex"
+              :key="hStation.id"
               class="content-visibility-auto-240 h-full"
               :data-help-target="hIndex === 0 ? 'hideout-first-station-card' : undefined"
             >

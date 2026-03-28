@@ -48,7 +48,7 @@
               :class="firFilter === 'all' ? 'bg-white/10 text-white' : 'text-surface-300'"
               @click="firFilter = 'all'"
             >
-              {{ t('page.needed_items.filters.all', 'All') }}
+              {{ t('needed_items.filters.all', 'All') }}
             </UButton>
             <UButton
               variant="ghost"

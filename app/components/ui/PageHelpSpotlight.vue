@@ -608,6 +608,8 @@
   const overlayPanels = computed<Record<string, string>[]>(() => {
     const frame = highlightFrame.value;
     if (!frame) return [];
+    const frameRight = frame.left + frame.width;
+    const frameBottom = frame.top + frame.height;
     return [
       {
         height: `${frame.top}px`,
@@ -623,14 +625,14 @@
       },
       {
         height: `${frame.height}px`,
-        left: `${frame.right}px`,
+        left: `${frameRight}px`,
         top: `${frame.top}px`,
-        width: `${Math.max(0, frame.viewportWidth - frame.right)}px`,
+        width: `${Math.max(0, frame.viewportWidth - frameRight)}px`,
       },
       {
-        height: `${Math.max(0, frame.viewportHeight - frame.bottom)}px`,
+        height: `${Math.max(0, frame.viewportHeight - frameBottom)}px`,
         left: '0px',
-        top: `${frame.bottom}px`,
+        top: `${frameBottom}px`,
         width: `${frame.viewportWidth}px`,
       },
     ].filter((panel) => Number.parseFloat(panel.width) > 0 && Number.parseFloat(panel.height) > 0);

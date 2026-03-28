@@ -264,14 +264,22 @@
   const perfSessionStartedAt = ref<number | null>(null);
   const hasUserScrolled = ref(false);
   const canPageScroll = ref(false);
-  watch(isSettingsDrawerOpen, (isOpen) => {
-    if (!isOpen) return;
-    closeHelp({ restoreFocus: false });
-  });
-  watch(isHelpOpen, (isOpen) => {
-    if (!isOpen) return;
-    closeSettingsDrawer();
-  });
+  watch(
+    isSettingsDrawerOpen,
+    (isOpen) => {
+      if (!isOpen) return;
+      closeHelp({ restoreFocus: false });
+    },
+    { immediate: true }
+  );
+  watch(
+    isHelpOpen,
+    (isOpen) => {
+      if (!isOpen) return;
+      closeSettingsDrawer();
+    },
+    { immediate: true }
+  );
   const updatePageScrollState = () => {
     if (typeof window === 'undefined') return;
     const doc = document.documentElement;

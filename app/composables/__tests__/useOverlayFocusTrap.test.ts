@@ -2,17 +2,20 @@ import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { computed, defineComponent, ref } from 'vue';
 import { useOverlayFocusTrap } from '@/composables/useOverlayFocusTrap';
-const mountHarness = () => {
+const mountedWrappers: ReturnType<typeof mount>[] = [];
+const mountHarness = (initialOverlayMode = true) => {
   const Harness = defineComponent({
     setup() {
       const containerRef = ref<HTMLElement | null>(null);
-      const isOverlayMode = computed(() => true);
+      const overlayMode = ref(initialOverlayMode);
+      const isOverlayMode = computed(() => overlayMode.value);
       const { restoreTriggerFocus, trapFocus } = useOverlayFocusTrap({
         containerRef,
         isOverlayMode,
       });
       return {
         containerRef,
+        overlayMode,
         restoreTriggerFocus,
         trapFocus,
       };
@@ -24,15 +27,18 @@ const mountHarness = () => {
       </aside>
     `,
   });
-  return mount(Harness, {
+  const wrapper = mount(Harness, {
     attachTo: document.body,
   });
+  mountedWrappers.push(wrapper);
+  return wrapper;
 };
 describe('useOverlayFocusTrap', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
   });
   afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
     document.body.innerHTML = '';
   });
   it('keeps tab focus inside the overlay container', async () => {
@@ -78,6 +84,24 @@ describe('useOverlayFocusTrap', () => {
     const wrapper = mountHarness();
     await wrapper.vm.$nextTick();
     await wrapper.vm.$nextTick();
+    wrapper.vm.restoreTriggerFocus();
+    await wrapper.vm.$nextTick();
+    expect(document.activeElement).toBe(triggerButton);
+  });
+  it('captures the trigger and focuses the container when overlay mode turns on later', async () => {
+    const triggerButton = document.createElement('button');
+    triggerButton.type = 'button';
+    triggerButton.textContent = 'Trigger';
+    document.body.appendChild(triggerButton);
+    triggerButton.focus();
+    const wrapper = mountHarness(false);
+    await wrapper.vm.$nextTick();
+    expect(document.activeElement).toBe(triggerButton);
+    wrapper.vm.overlayMode = true;
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const overlay = wrapper.get('aside').element as HTMLElement;
+    expect(document.activeElement).toBe(overlay);
     wrapper.vm.restoreTriggerFocus();
     await wrapper.vm.$nextTick();
     expect(document.activeElement).toBe(triggerButton);

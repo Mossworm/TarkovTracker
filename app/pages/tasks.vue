@@ -764,14 +764,22 @@
       debouncedRefreshVisibleTasks.cancel();
     });
   };
-  watch(isSettingsDrawerOpen, (isOpen) => {
-    if (!isOpen) return;
-    closeHelp({ restoreFocus: false });
-  });
-  watch(isHelpOpen, (isOpen) => {
-    if (!isOpen) return;
-    closeSettingsDrawer();
-  });
+  watch(
+    isSettingsDrawerOpen,
+    (isOpen) => {
+      if (!isOpen) return;
+      closeHelp({ restoreFocus: false });
+    },
+    { immediate: true }
+  );
+  watch(
+    isHelpOpen,
+    (isOpen) => {
+      if (!isOpen) return;
+      closeSettingsDrawer();
+    },
+    { immediate: true }
+  );
   watch(
     [
       getTaskPrimaryView,

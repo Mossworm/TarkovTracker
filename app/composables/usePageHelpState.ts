@@ -2,6 +2,12 @@ import type { PageHelpKey } from '@/composables/usePageHelpContent';
 export interface PageHelpCloseOptions {
   restoreFocus?: boolean;
 }
+const PAGE_HELP_PATHS: Record<PageHelpKey, string[]> = {
+  dashboard: ['/'],
+  hideout: ['/hideout'],
+  needed_items: ['/needed-items', '/neededitems'],
+  tasks: ['/tasks'],
+};
 export function usePageHelpState(pageKey: PageHelpKey): {
   isOpen: globalThis.Ref<boolean>;
   open: () => void;
@@ -11,6 +17,7 @@ export function usePageHelpState(pageKey: PageHelpKey): {
 } {
   const isOpen = useState<boolean>(`pageHelp:${pageKey}:isOpen`, () => false);
   const restoreFocusOnClose = useState<boolean>(`pageHelp:${pageKey}:restoreFocus`, () => true);
+  const route = useRoute();
   const open = () => {
     restoreFocusOnClose.value = true;
     isOpen.value = true;
@@ -31,6 +38,15 @@ export function usePageHelpState(pageKey: PageHelpKey): {
     restoreFocusOnClose.value = true;
     return shouldRestoreFocus;
   };
+  watch(
+    () => route.path,
+    (path) => {
+      if (PAGE_HELP_PATHS[pageKey].includes(path)) return;
+      restoreFocusOnClose.value = true;
+      isOpen.value = false;
+    },
+    { immediate: true }
+  );
   return {
     isOpen,
     open,
