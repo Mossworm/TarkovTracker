@@ -1,3 +1,10 @@
+## [1.28.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.2...v1.28.3) (2026-03-28)
+
+
+### Bug Fixes
+
+* **deps:** resolve vue-router volar typecheck warning ([#262](https://github.com/tarkovtracker-org/TarkovTracker/issues/262)) ([50b1355](https://github.com/tarkovtracker-org/TarkovTracker/commit/50b1355a950e4355f37fb624dfe275f07e835e99))
+
 ## [1.28.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.1...v1.28.2) (2026-03-28)
 
 
