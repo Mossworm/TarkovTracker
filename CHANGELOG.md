@@ -1,3 +1,10 @@
+## [1.28.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.3...v1.28.4) (2026-03-28)
+
+
+### Bug Fixes
+
+* align map metadata and attribution copy ([a53083e](https://github.com/tarkovtracker-org/TarkovTracker/commit/a53083e49be0d2610919282b53bbedc7217ba5c5))
+
 ## [1.28.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.2...v1.28.3) (2026-03-28)
 
 
