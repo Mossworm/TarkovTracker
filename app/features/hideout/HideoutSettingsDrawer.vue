@@ -155,7 +155,6 @@
   });
   const handleClose = () => {
     close();
-    if (!isOverlayMode.value) return;
     nextTick(() => {
       restoreTriggerFocus();
     });

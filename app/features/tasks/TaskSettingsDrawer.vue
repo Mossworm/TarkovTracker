@@ -148,7 +148,6 @@
   const { failedTasksCount, repairFailedTasks } = useTaskRepair({ requestRepairConfirm });
   const handleClose = () => {
     close();
-    if (!isOverlayMode.value) return;
     nextTick(() => {
       restoreTriggerFocus();
     });

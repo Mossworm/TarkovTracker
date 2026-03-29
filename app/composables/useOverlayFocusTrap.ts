@@ -56,8 +56,8 @@ export function useOverlayFocusTrap({ containerRef, isOverlayMode }: UseOverlayF
     }
   };
   onMounted(() => {
-    if (!isOverlayMode.value) return;
     storeTriggerElement();
+    if (!isOverlayMode.value) return;
     void focusContainer();
   });
   watch(

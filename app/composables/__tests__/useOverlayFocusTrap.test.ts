@@ -88,6 +88,18 @@ describe('useOverlayFocusTrap', () => {
     await wrapper.vm.$nextTick();
     expect(document.activeElement).toBe(triggerButton);
   });
+  it('captures the trigger even when mounted in docked mode', async () => {
+    const triggerButton = document.createElement('button');
+    triggerButton.type = 'button';
+    triggerButton.textContent = 'Trigger';
+    document.body.appendChild(triggerButton);
+    triggerButton.focus();
+    const wrapper = mountHarness(false);
+    await wrapper.vm.$nextTick();
+    wrapper.vm.restoreTriggerFocus();
+    await wrapper.vm.$nextTick();
+    expect(document.activeElement).toBe(triggerButton);
+  });
   it('captures the trigger and focuses the container when overlay mode turns on later', async () => {
     const triggerButton = document.createElement('button');
     triggerButton.type = 'button';

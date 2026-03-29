@@ -18,7 +18,7 @@
         id="needed-items-settings-drawer-title"
         class="text-base font-semibold tracking-[0.04em] text-white"
       >
-        {{ t('page.needed_items.settings.title', 'Needed Items Settings') }}
+        {{ t('page.needed_items.settings.title') }}
       </h2>
       <UButton
         variant="ghost"
@@ -48,7 +48,7 @@
               :class="firFilter === 'all' ? 'bg-white/10 text-white' : 'text-surface-300'"
               @click="firFilter = 'all'"
             >
-              {{ t('page.needed_items.filters.all', 'All') }}
+              {{ t('page.needed_items.filters.all') }}
             </UButton>
             <UButton
               variant="ghost"

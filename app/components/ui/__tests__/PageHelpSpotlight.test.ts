@@ -152,7 +152,7 @@ describe('PageHelpSpotlight', () => {
     expect(document.body.textContent ?? '').not.toContain('Start with the main filters.');
     wrapper.unmount();
   });
-  it('emits close when finishing the final step or pressing escape', async () => {
+  it('emits close when finishing the final step', async () => {
     const wrapper = await mountComponent();
     await flushUi(wrapper);
     const nextButton = findBodyButton('Next');
@@ -163,6 +163,11 @@ describe('PageHelpSpotlight', () => {
     expect(finishButton).toBeTruthy();
     finishButton!.click();
     expect(wrapper.emitted('close')).toHaveLength(1);
+    wrapper.unmount();
+  });
+  it('emits close when pressing escape', async () => {
+    const wrapper = await mountComponent();
+    await flushUi(wrapper);
     const dialog = document.body.querySelector('aside');
     dialog?.dispatchEvent(
       new KeyboardEvent('keydown', {
@@ -171,7 +176,7 @@ describe('PageHelpSpotlight', () => {
         key: 'Escape',
       })
     );
-    expect(wrapper.emitted('close')).toHaveLength(2);
+    expect(wrapper.emitted('close')).toHaveLength(1);
     wrapper.unmount();
   });
   it('advances when the current step target is clicked', async () => {
