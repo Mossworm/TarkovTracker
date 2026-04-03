@@ -71,7 +71,7 @@ export function useTaskCardLinks(options: UseTaskCardLinksOptions): UseTaskCardL
     if (currentTask.wikiLink) {
       params.set('reference', currentTask.wikiLink);
     }
-    return `https://issue.tarkovtracker.org/data?${params.toString()}`;
+    return `https://trackerbot.nivmizz7.fr/data?${params.toString()}`;
   };
   const openTaskDataIssue = () => {
     window.open(getTaskDataIssueUrl(), '_blank', 'noopener,noreferrer');
