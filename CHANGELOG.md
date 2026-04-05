@@ -1,3 +1,10 @@
+## [1.28.8](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.7...v1.28.8) (2026-04-05)
+
+
+### Bug Fixes
+
+* **api:** harden edge function auth ([09a4b0a](https://github.com/tarkovtracker-org/TarkovTracker/commit/09a4b0a1fa66567be452ecdf17dedeb357c414d8))
+
 ## [1.28.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.6...v1.28.7) (2026-04-05)
 
 
