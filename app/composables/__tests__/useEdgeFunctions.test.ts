@@ -2,6 +2,7 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mockFetch = vi.fn();
+const mockSupabaseReady = vi.fn();
 const runtimeConfig = {
   public: {} as Record<string, string>,
 };
@@ -30,6 +31,7 @@ mockNuxtImport('useRouter', () => () => ({
 mockNuxtImport('useNuxtApp', () => () => ({
   $supabase: {
     client: mockSupabaseClient,
+    ready: mockSupabaseReady,
   },
 }));
 mockNuxtImport('useRuntimeConfig', () => () => ({
@@ -48,6 +50,7 @@ describe('useEdgeFunctions.getTeamMembers', () => {
     vi.clearAllMocks();
     vi.stubGlobal('$fetch', mockFetch);
     runtimeConfig.public = {};
+    mockSupabaseReady.mockResolvedValue(undefined);
     mockSupabaseClient.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'token-1' } },
       error: null,
@@ -183,11 +186,62 @@ describe('useEdgeFunctions.createToken', () => {
     await expect(
       edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
     ).resolves.toEqual({ tokenValue: 'PVP_deadbeef' });
+    expect(mockSupabaseReady).toHaveBeenCalledTimes(1);
     expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('token-create', {
       body: { gameMode: 'pvp', permissions: ['GP'] },
       method: 'POST',
     });
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+  it('fails locally when no authenticated session is available', async () => {
+    mockSupabaseClient.auth.getSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    mockSupabaseClient.auth.refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(
+      edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
+    ).rejects.toThrow('User not authenticated');
+    expect(mockSupabaseReady).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseClient.functions.invoke).not.toHaveBeenCalled();
+  });
+  it('refreshes once and retries when the first invoke returns 401', async () => {
+    const authError = {
+      context: new Response(JSON.stringify({ error: 'Invalid JWT' }), {
+        headers: {
+          'content-type': 'application/json',
+        },
+        status: 401,
+        statusText: 'Unauthorized',
+      }),
+      message: 'Edge Function returned a non-2xx status code',
+    };
+    mockSupabaseClient.functions.invoke
+      .mockResolvedValueOnce({
+        data: null,
+        error: authError,
+      })
+      .mockResolvedValueOnce({
+        data: { tokenValue: 'PVP_refreshed' },
+        error: null,
+      });
+    mockSupabaseClient.auth.refreshSession.mockResolvedValue({
+      data: { session: { access_token: 'token-2' } },
+      error: null,
+    });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(
+      edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
+    ).resolves.toEqual({ tokenValue: 'PVP_refreshed' });
+    expect(mockSupabaseReady).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseClient.auth.refreshSession).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledTimes(2);
   });
   it('normalizes Supabase function HTTP errors with response details', async () => {
     const rateLimitError = {

@@ -70,27 +70,61 @@ const normalizeFunctionError = async <TError>(
 export const useEdgeFunctions = () => {
   const { $supabase } = useNuxtApp();
   const getAuthToken = async () => {
+    await $supabase.ready();
     const { data, error } = await $supabase.client.auth.getSession();
     if (error) throw error;
     const token = data.session?.access_token;
-    if (!token) {
-      throw new Error('User not authenticated');
+    if (token) {
+      return token;
     }
-    return token;
+    const { data: refreshData, error: refreshError } = await $supabase.client.auth.refreshSession();
+    if (refreshError) throw refreshError;
+    const refreshedToken = refreshData.session?.access_token;
+    if (refreshedToken) {
+      return refreshedToken;
+    }
+    throw new Error('User not authenticated');
+  };
+  const invokeSupabaseFunction = async <T>(
+    fnName: string,
+    body: Record<string, unknown>,
+    method: 'POST' | 'GET' | 'DELETE' | 'PUT'
+  ) => {
+    await getAuthToken();
+    let { data, error } = await $supabase.client.functions.invoke<T>(fnName, {
+      body,
+      method,
+    });
+    if (!error) {
+      return data as T;
+    }
+    if (getErrorStatus(error) === 401) {
+      try {
+        const { data: refreshData, error: refreshError } =
+          await $supabase.client.auth.refreshSession();
+        if (!refreshError && refreshData.session?.access_token) {
+          ({ data, error } = await $supabase.client.functions.invoke<T>(fnName, {
+            body,
+            method,
+          }));
+        }
+      } catch (refreshSessionError) {
+        logger.debug(`[EdgeFunctions] Session refresh failed during ${fnName}:`, {
+          refreshSessionError,
+        });
+      }
+    }
+    if (error) {
+      throw await normalizeFunctionError(fnName, error);
+    }
+    return data as T;
   };
   const callSupabaseFunction = async <T>(
     fnName: string,
     body: Record<string, unknown>,
     method: 'POST' | 'GET' | 'DELETE' | 'PUT' = 'POST'
   ) => {
-    const { data, error } = await $supabase.client.functions.invoke<T>(fnName, {
-      body,
-      method,
-    });
-    if (error) {
-      throw await normalizeFunctionError(fnName, error);
-    }
-    return data as T;
+    return await invokeSupabaseFunction<T>(fnName, body, method);
   };
   const getTeamMembers = async (
     teamId: string
