@@ -98,10 +98,189 @@
   common: {
     cancel: '取消',
     close: '关闭',
+    click: '点击',
+    previous: '上一步',
+    next: '下一步',
+    finish: '完成',
     back_to_top: '回到顶部',
     refresh_button: '重试',
     opens_in_new_tab: '在新选项卡中打开',
     note: '注意',
+  },
+  page_help: {
+    button: '帮助',
+    hint_title: '第一次来这里？',
+    dismiss: '关闭',
+    launcher: {
+      title: '帮助与新手引导',
+      summary: '为当前页面选择一份快速指南，或走完整的初始设置流程。',
+      page_guide: '讲解此页面',
+      page_guide_unavailable: '这个页面暂时还没有专属指南，请先使用新手引导。',
+      onboarding: '新用户引导',
+      onboarding_description: '先完成导入，再补齐基础设置，最后核对任务。',
+    },
+    onboarding: {
+      title: '开始设置',
+      summary: '这是推荐给新用户和回归用户的第一轮流程。使用操作按钮可直接跳到真实页面。',
+      actions: {
+        account: '打开账号',
+        login: '登录',
+      },
+      steps: {
+        import: {
+          title: '先导入进度',
+          description: '在进行手动设置之前先使用导入功能。这是让大部分追踪数据最快进入可用状态的方法。',
+          bullets: {
+            one: '如果你有 Tarkov.dev 资料，先导入它。这样通常能补齐大部分账号基础信息和已追踪进度。',
+            two: '接着导入你的 EFT 日志。这样几乎不用手动点击就能回填任务和其他进度。',
+            three: '如果两种导入都顺利完成，手动设置就会变成一次快速核对，而不是从头重建全部内容。',
+          },
+          actions: {
+            open: '打开导入',
+          },
+        },
+        profile: {
+          title: '完成基础设置',
+          description: '导入完成后，请确认核心资料字段，并决定是否要把进度同步到账号。',
+          bullets: {
+            one: '设置你的游戏模式、版本、等级、阵营和显示名称，让筛选器和解锁条件与你的真实账号一致。',
+            two: '登录后可解锁队伍、基于 API 的功能以及云存储，更方便在不同设备间保留进度。',
+            three: '如果你暂时不想登录，也可以先在本地追踪，之后再把进度绑定到账号。',
+          },
+          actions: {
+            settings: '打开设置',
+          },
+        },
+        tasks: {
+          title: '核对任务',
+          description: '最后一个高影响力的清理步骤是任务可用性。只要这部分准确，站内其他页面也会可靠得多。',
+          bullets: {
+            one: '在任务页面中，为每个商人标记你当前在游戏内已经可接的任务。这样补全前置链会比逐个手动完成旧任务快得多。',
+            two: '如果某些内容看起来不对，请使用任务卡片菜单反馈数据问题，而不是强行把追踪器改成错误状态。',
+            three: '完成这一步后，可在任意支持的页面使用顶栏帮助按钮重新打开页面指南或这套新手引导。',
+          },
+          actions: {
+            open: '打开任务',
+          },
+        },
+      },
+    },
+    dashboard: {
+      title: '仪表盘指南',
+      summary: '使用仪表盘发现你当前最值得推进的下一步，查看整体进度，并跳转到需要关注的页面。',
+      hint: '快速了解仪表盘正在显示什么，以及下一步该点哪里。',
+      sections: {
+        focus: {
+          title: '最佳下一步',
+          description: '顶部卡片会根据你当前的筛选条件和已记录进度，突出显示最明确的即时推进方向。',
+          bullet_one: '当你想要一个强力建议，而不是浏览完整任务列表时，就使用它。',
+          bullet_two: '如果结果看起来不对，先检查任务筛选器，因为被隐藏的任务会改变推荐结果。',
+        },
+        progress: {
+          title: '进度卡片',
+          description: '进度卡片是通往任务和所需物品的快捷入口，并且会带着你当前的统计上下文。',
+          bullet_one: '任务卡和目标卡会带你回到任务列表。',
+          bullet_two: '物品卡会直接跳到对应的所需物品视图，适用于任务或藏身处。',
+        },
+        review: {
+          title: '长期复盘',
+          description: '商人和里程碑区域用于查看更大的进度面，而不只是下一次点击。',
+          bullet_one: '通过商人区域查看哪些任务线仍然剩下最多工作量。',
+          bullet_two: '通过里程碑区域快速检查 Kappa、Lightkeeper 和整体完成节奏。',
+        },
+      },
+      actions: {
+        tasks: '打开任务',
+        needed_items: '打开所需物品',
+      },
+    },
+    tasks: {
+      title: '任务指南',
+      summary: '使用任务页面浏览可做的事情、切换观察视角，并把列表收窄到你真正想优先关注的内容。',
+      hint: '快速了解任务视图、筛选器以及重要设置的位置。',
+      sections: {
+        views: {
+          title: '选择视图',
+          description: '顶部一排会改变任务的分组方式，让你按列表、商人、地图或图谱浏览任务。',
+          bullet_one: '列表视图最适合普通进度检查和快速搜索。',
+          bullet_two: '商人、地图和图谱视图更适合你已经明确知道想从哪个角度查看时使用。',
+        },
+        filters: {
+          title: '缩小列表',
+          description: '状态筛选器可以让你不离开页面，就专注于当前可做、已锁定、已完成或失败的任务。',
+          bullet_one: '搜索会覆盖任务名称，在列表太长时特别有用。',
+          bullet_two: '如果数量看起来比预期少，通常是某个状态筛选或队友筛选把结果隐藏了。',
+        },
+        settings: {
+          title: '调整行为',
+          description: '齿轮按钮会打开显示与筛选偏好设置，这些设置会影响任务列表在不同会话中的行为。',
+          bullet_one: '当你需要不同的默认筛选、队伍可见性或地图行为时，就去设置里调整。',
+          bullet_two: '如果页面感觉不对劲，先检查设置，再考虑是不是数据缺失。',
+        },
+      },
+      actions: {
+        needed_items: '任务物品',
+        hideout: '打开藏身处',
+      },
+    },
+    needed_items: {
+      title: '所需物品指南',
+      summary: '使用所需物品页面把任务和藏身处材料合并，再将列表缩小到你现在真正关心的那些物品。',
+      hint: '快速了解顶部标签、视图模式，以及齿轮后面的筛选设置。',
+      sections: {
+        scopes: {
+          title: '选择范围',
+          description: '顶部标签可在全部物品、仅任务、仅藏身处以及已完成需求之间切换。',
+          bullet_one: '当你专注做任务且不想混入藏身处材料时，请使用仅任务。',
+          bullet_two: '当你想回顾已经满足的内容，而不是仍然缺少的内容时，请使用已完成。',
+        },
+        views: {
+          title: '切换布局',
+          description: '列表、网格和合并视图显示的是同一批数据，只是分别针对不同浏览习惯做了优化。',
+          bullet_one: '列表视图最适合快速查看数量和名称。',
+          bullet_two: '当你更关心总量而不是单个来源时，合并视图会把重复物品聚合在一起。',
+        },
+        filters: {
+          title: '细化列表',
+          description: '设置抽屉可控制已拥有物品显示、FIR 规则、队伍需求以及其他高影响筛选器。',
+          bullet_one: '如果某个物品意外消失，通常是抽屉里的某个筛选器导致的。',
+          bullet_two: '当你希望先看到影响最大的物品时，按优先级排序最合适。',
+        },
+      },
+      actions: {
+        tasks: '打开任务',
+        hideout: '打开藏身处',
+      },
+    },
+    hideout: {
+      title: '藏身处指南',
+      summary: '使用藏身处页面查看哪些设施已经准备就绪、哪些仍被阻挡，以及哪些材料仍然对接下来的升级有价值。',
+      hint: '快速了解藏身处状态、可用性规则，以及相关材料入口在哪里。',
+      sections: {
+        statuses: {
+          title: '理解状态',
+          description: '主筛选器会把设施分成全部、可建造、已锁定和已满级，方便你聚焦正确阶段。',
+          bullet_one: '可建造是查看你现在能立刻建什么的最快方式。',
+          bullet_two: '已锁定适合用来理解当前还缺哪些前置条件。',
+        },
+        requirements: {
+          title: '控制阻挡条件',
+          description: '设置菜单可以强制检查设施、技能和商人要求，让可用性与你希望页面采用的严格程度一致。',
+          bullet_one: '当你只想看当前完全可建的升级时，请开启要求筛选。',
+          bullet_two: '当你想做更宽松的前瞻规划时，请关闭它们。',
+        },
+        materials: {
+          title: '追踪材料',
+          description: '每张设施卡都会显示下一次升级所需的物品和前置条件，并附带返回更大物品流程的链接。',
+          bullet_one: '当你想在不离开页面的情况下查看升级细节时，请使用设施卡。',
+          bullet_two: '当你想查看跨全部设施的完整采购清单时，请跳转到所需物品。',
+        },
+      },
+      actions: {
+        needed_items: '藏身处物品',
+        tasks: '打开任务',
+      },
+    },
   },
   import_confirm: {
     title: '确认数据导入',
@@ -388,7 +567,8 @@
     tasks: {
       title: '任务',
       primary_views: {
-        all: '全部',
+        all: '列表',
+        list: '列表',
         maps: '按地图',
         traders: '按商人',
         graph: '图表',
@@ -417,6 +597,7 @@
         resize_handle: '调整图表高度',
       },
       secondary_views: {
+        all: '全部',
         available: '可接取',
         completed: '已完成',
         locked: '未解锁',
@@ -723,6 +904,7 @@
       error: 'Unable to load needed items.',
       retry: 'Try again',
       filters: {
+        all: '全部',
         label: '筛选',
         sections: {
           items: '物品筛选',
@@ -926,7 +1108,7 @@
       share_private_outro: '中启用共享以公开此链接。',
       share_public_enabled: 'This mode is public. Anyone with the link can view it.',
       share_private_enabled: 'This mode is private.',
-      mode_toggle_label: 'Select profile mode',
+      mode_toggle_label: '选择资料模式',
       copy_snapshot: 'Copy Snapshot',
       view_tasks: 'Open Tasks',
       tab_overview: '总览',

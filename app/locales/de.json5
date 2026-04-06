@@ -98,10 +98,189 @@
   common: {
     cancel: 'Abbrechen',
     close: 'Schließen',
+    click: 'Klicken',
+    previous: 'Zurück',
+    next: 'Weiter',
+    finish: 'Fertig',
     back_to_top: 'Zurück nach oben',
     refresh_button: 'Erneut versuchen',
     opens_in_new_tab: 'Öffnet in neuem Tab',
     note: 'Hinweis',
+  },
+  page_help: {
+    button: 'Hilfe',
+    hint_title: 'Neu hier?',
+    dismiss: 'Schließen',
+    launcher: {
+      title: 'Hilfe und Onboarding',
+      summary: 'Wähle eine kurze Anleitung für diese Seite oder den vollständigen Einrichtungsweg.',
+      page_guide: 'Diese Seite erklären',
+      page_guide_unavailable: 'Für diese Seite gibt es noch keine Anleitung. Nutze stattdessen das Onboarding.',
+      onboarding: 'Onboarding für neue Nutzer',
+      onboarding_description: 'Starte mit den Importen, richte die Grundlagen ein und prüfe dann deine Aufgaben.',
+    },
+    onboarding: {
+      title: 'Einrichtung starten',
+      summary: 'Das ist der empfohlene erste Durchgang für neue oder zurückkehrende Nutzer. Nutze die Aktionsschaltflächen, um direkt zu den echten Seiten zu springen.',
+      actions: {
+        account: 'Konto öffnen',
+        login: 'Anmelden',
+      },
+      steps: {
+        import: {
+          title: 'Zuerst Fortschritt importieren',
+          description: 'Nutze die Importe, bevor du etwas manuell einrichtest. So bringst du den Großteil deines Trackers am schnellsten in einen brauchbaren Zustand.',
+          bullets: {
+            one: 'Importiere zuerst dein Tarkov.dev-Profil, wenn du es hast. Damit werden meist die wichtigsten Kontodaten und viel verfolgter Fortschritt übernommen.',
+            two: 'Importiere danach deine EFT-Logs. Damit lassen sich Quests und weiterer Fortschritt fast ohne manuelle Klicks nachtragen.',
+            three: 'Wenn beide Importe sauber durchlaufen, wird die manuelle Einrichtung eher zu einer kurzen Prüfung statt zu einem kompletten Neuaufbau von Hand.',
+          },
+          actions: {
+            open: 'Importe öffnen',
+          },
+        },
+        profile: {
+          title: 'Grundlagen abschließen',
+          description: 'Lege nach den Importen die wichtigsten Profildaten fest und entscheide, ob dein Fortschritt mit einem Konto synchronisiert werden soll.',
+          bullets: {
+            one: 'Setze Spielmodus, Edition, Level, Fraktion und Anzeigenamen, damit Filter und Freischaltbedingungen zu deinem echten Konto passen.',
+            two: 'Mit einer Anmeldung schaltest du Teams, API-gestützte Funktionen und Cloud-Speicherung frei, damit dein Fortschritt leichter über Geräte hinweg erhalten bleibt.',
+            three: 'Wenn du dich noch nicht anmelden willst, kannst du zuerst lokal tracken und den Fortschritt später mit einem Konto verknüpfen.',
+          },
+          actions: {
+            settings: 'Einstellungen öffnen',
+          },
+        },
+        tasks: {
+          title: 'Aufgaben prüfen',
+          description: 'Der letzte wichtige Bereinigungsschritt ist die Verfügbarkeit deiner Aufgaben. Wenn das stimmt, wird der Rest der Seite deutlich verlässlicher.',
+          bullets: {
+            one: 'Markiere auf der Aufgabenseite die Quests, die du im Spiel aktuell bei jedem Händler verfügbar hast. So werden Abhängigkeitsketten viel schneller ergänzt, als wenn du alte Aufgaben einzeln als abgeschlossen markierst.',
+            two: 'Wenn etwas falsch aussieht, nutze das Menü der Aufgabenkarte, um ein Datenproblem zu melden, statt deinen Tracker in einen fehlerhaften Zustand zu zwingen.',
+            three: 'Nach diesem Durchgang kannst du den Hilfe-Knopf in der App-Leiste auf unterstützten Seiten nutzen, um die Seitenanleitung oder dieses Onboarding erneut zu öffnen.',
+          },
+          actions: {
+            open: 'Aufgaben öffnen',
+          },
+        },
+      },
+    },
+    dashboard: {
+      title: 'Dashboard-Anleitung',
+      summary: 'Nutze das Dashboard, um den besten nächsten Schritt zu finden, deinen Fortschritt zu prüfen und direkt zu den relevanten Seiten zu springen.',
+      hint: 'Hol dir einen schnellen Überblick darüber, was das Dashboard zeigt und wo du als Nächstes klicken solltest.',
+      sections: {
+        focus: {
+          title: 'Bester nächster Schritt',
+          description: 'Die oberste Karte zeigt den klarsten unmittelbaren Fortschritt basierend auf deinen aktuellen Filtern und deinem erfassten Fortschritt.',
+          bullet_one: 'Nutze sie, wenn du eine starke Empfehlung statt der kompletten Aufgabenliste sehen willst.',
+          bullet_two: 'Wenn sie falsch wirkt, prüfe zuerst deine Aufgabenfilter, denn ausgeblendete Aufgaben können die Empfehlung verändern.',
+        },
+        progress: {
+          title: 'Fortschrittskarten',
+          description: 'Die Fortschrittskarten sind Direktlinks zu Aufgaben und benötigten Gegenständen, wobei deine aktuellen Summen bereits im Kontext enthalten sind.',
+          bullet_one: 'Aufgaben- und Zielkarten springen zurück in deine Questliste.',
+          bullet_two: 'Gegenstandskarten springen direkt in die passende Ansicht der benötigten Items für Aufgaben oder Versteck.',
+        },
+        review: {
+          title: 'Längerfristige Übersicht',
+          description: 'Die Bereiche für Händler und Meilensteine sind für den breiteren Fortschrittsblick gedacht, nicht nur für den nächsten Klick.',
+          bullet_one: 'Nutze die Händleransicht, um zu sehen, bei welchen Questreihen noch am meisten offen ist.',
+          bullet_two: 'Nutze Meilensteine, um Kappa, Lightkeeper und dein allgemeines Abschlusstempo auf einen Blick zu prüfen.',
+        },
+      },
+      actions: {
+        tasks: 'Aufgaben öffnen',
+        needed_items: 'Benötigte Gegenstände öffnen',
+      },
+    },
+    tasks: {
+      title: 'Aufgaben-Anleitung',
+      summary: 'Nutze die Aufgabenseite, um verfügbare Arbeit zu durchsuchen, die Perspektive zu wechseln und die Liste genau auf deinen Fokus einzugrenzen.',
+      hint: 'Hol dir eine kurze Erklärung zu Aufgabenansichten, Filtern und den wichtigen Einstellungen.',
+      sections: {
+        views: {
+          title: 'Ansicht wählen',
+          description: 'Die obere Leiste ändert, wie Aufgaben gruppiert werden, damit du nach Liste, Händler, Karte oder Graph stöbern kannst.',
+          bullet_one: 'Die Listenansicht eignet sich am besten für normale Fortschrittsprüfungen und schnelle Suche.',
+          bullet_two: 'Händler-, Karten- und Graph-Ansichten sind besser, wenn du bereits weißt, aus welcher Perspektive du prüfen willst.',
+        },
+        filters: {
+          title: 'Liste eingrenzen',
+          description: 'Mit Statusfiltern kannst du dich auf jetzt verfügbare, gesperrte, abgeschlossene oder fehlgeschlagene Aufgaben konzentrieren, ohne die Seite zu verlassen.',
+          bullet_one: 'Die Suche funktioniert über Aufgabennamen hinweg und hilft, wenn die Liste zu groß wirkt.',
+          bullet_two: 'Wenn eine Anzahl niedriger als erwartet aussieht, blendet meist einer der Status- oder Teamfilter Ergebnisse aus.',
+        },
+        settings: {
+          title: 'Verhalten anpassen',
+          description: 'Das Zahnrad öffnet Anzeige- und Filtereinstellungen, die das Verhalten der Aufgabenliste sitzungsübergreifend ändern.',
+          bullet_one: 'Nutze die Einstellungen, wenn du andere Standardfilter, Team-Sichtbarkeit oder Kartenverhalten willst.',
+          bullet_two: 'Wenn sich die Seite seltsam anfühlt, schau zuerst in die Einstellungen, bevor du von fehlenden Daten ausgehst.',
+        },
+      },
+      actions: {
+        needed_items: 'Aufgaben-Items',
+        hideout: 'Versteck öffnen',
+      },
+    },
+    needed_items: {
+      title: 'Anleitung für benötigte Gegenstände',
+      summary: 'Nutze die benötigten Gegenstände, um Materialien aus Aufgaben und Versteck zusammenzuführen und die Liste dann auf die Items einzugrenzen, die für dich noch relevant sind.',
+      hint: 'Hol dir eine kurze Erklärung zu Tabs, Ansichtsmodi und den Filtern hinter dem Zahnrad.',
+      sections: {
+        scopes: {
+          title: 'Bereich wählen',
+          description: 'Die Tabs oben schalten zwischen allen Items, nur Aufgaben, nur Versteck und bereits erfüllten Bedürfnissen um.',
+          bullet_one: 'Nutze nur Aufgaben, wenn du questest und keine Versteck-Materialien dazwischen sehen willst.',
+          bullet_two: 'Nutze Erledigt, wenn du prüfen willst, was du bereits erfüllt hast, statt was noch fehlt.',
+        },
+        views: {
+          title: 'Layout wechseln',
+          description: 'Listen-, Raster- und kombinierte Ansicht zeigen dieselben Daten, sind aber für unterschiedliche Arbeitsweisen optimiert.',
+          bullet_one: 'Die Listenansicht ist am schnellsten, um Mengen und Namen zu scannen.',
+          bullet_two: 'Die kombinierte Ansicht gruppiert wiederholte Items zusammen, wenn dich Gesamtsummen mehr interessieren als einzelne Quellen.',
+        },
+        filters: {
+          title: 'Liste verfeinern',
+          description: 'Die Einstellungen steuern die Sichtbarkeit vorhandener Items, FIR-Regeln, Team-Bedarf und andere wirkungsstarke Filter.',
+          bullet_one: 'Wenn ein Item unerwartet verschwindet, ist meist ein Filter im Panel die Ursache.',
+          bullet_two: 'Nach Priorität zu sortieren ist ideal, wenn du zuerst die wichtigsten Items sehen willst.',
+        },
+      },
+      actions: {
+        tasks: 'Aufgaben öffnen',
+        hideout: 'Versteck öffnen',
+      },
+    },
+    hideout: {
+      title: 'Versteck-Anleitung',
+      summary: 'Nutze die Versteck-Seite, um zu sehen, welche Stationen bereit sind, was blockiert ist und welche Materialien für die nächsten Upgrades noch zählen.',
+      hint: 'Hol dir eine kurze Erklärung zu Versteck-Status, Verfügbarkeitsregeln und den verknüpften Materialien.',
+      sections: {
+        statuses: {
+          title: 'Status verstehen',
+          description: 'Die Hauptfilter teilen Stationen in alle, verfügbar, gesperrt und maximal ausgebaut auf, damit du dich auf die richtige Stufe konzentrieren kannst.',
+          bullet_one: 'Verfügbar ist der schnellste Weg zu sehen, was du sofort bauen kannst.',
+          bullet_two: 'Gesperrt ist nützlich, wenn du verstehen willst, welche Anforderungen noch fehlen.',
+        },
+        requirements: {
+          title: 'Blocker steuern',
+          description: 'Das Einstellungsmenü kann Stations-, Skill- und Händleranforderungen erzwingen, damit die Verfügbarkeit so streng ist, wie du es für diese Seite willst.',
+          bullet_one: 'Aktiviere die Anforderungsfilter, wenn du nur Upgrades sehen willst, die sofort vollständig baubar sind.',
+          bullet_two: 'Schalte sie aus, wenn du eine breitere Planungsansicht für kommende Upgrades willst.',
+        },
+        materials: {
+          title: 'Materialien verfolgen',
+          description: 'Jede Stationskarte zeigt die Gegenstände und Voraussetzungen für das nächste Upgrade, mit Links zurück in den größeren Item-Workflow.',
+          bullet_one: 'Nutze Stationskarten, wenn du Upgrade-Details sehen willst, ohne die Seite zu verlassen.',
+          bullet_two: 'Springe zu den benötigten Gegenständen, wenn du die vollständige stationsübergreifende Einkaufsliste für den Versteck-Fortschritt brauchst.',
+        },
+      },
+      actions: {
+        needed_items: 'Versteck-Items',
+        tasks: 'Aufgaben öffnen',
+      },
+    },
   },
   import_confirm: {
     title: 'Datenimport bestätigen',
@@ -388,7 +567,8 @@
     tasks: {
       title: 'Aufgaben',
       primary_views: {
-        all: 'Alle',
+        all: 'Liste',
+        list: 'Liste',
         maps: 'Karten',
         traders: 'Händler',
         graph: 'Graph',
@@ -417,6 +597,7 @@
         resize_handle: 'Graphhöhe anpassen',
       },
       secondary_views: {
+        all: 'Alle',
         available: 'Verfügbar',
         completed: 'Abgeschlossen',
         locked: 'Gesperrt',
@@ -723,6 +904,7 @@
       error: 'Unable to load needed items.',
       retry: 'Try again',
       filters: {
+        all: 'Alle',
         label: 'Filter',
         sections: {
           items: 'GEGENSTÄNDE',
@@ -926,7 +1108,7 @@
       share_private_outro: ', um diesen Link öffentlich zu machen.',
       share_public_enabled: 'This mode is public. Anyone with the link can view it.',
       share_private_enabled: 'This mode is private.',
-      mode_toggle_label: 'Select profile mode',
+      mode_toggle_label: 'Profilmodus auswählen',
       copy_snapshot: 'Copy Snapshot',
       view_tasks: 'Open Tasks',
       tab_overview: 'Übersicht',

@@ -98,10 +98,189 @@
   common: {
     cancel: 'Annuler',
     close: 'Fermer',
+    click: 'Cliquez',
+    previous: 'Précédent',
+    next: 'Suivant',
+    finish: 'Terminer',
     back_to_top: 'Retour en haut',
     refresh_button: 'Actualiser',
     opens_in_new_tab: 'Ouvre dans un nouvel onglet',
     note: 'Remarque',
+  },
+  page_help: {
+    button: 'Aide',
+    hint_title: 'Nouveau ici ?',
+    dismiss: 'Fermer',
+    launcher: {
+      title: 'Aide et onboarding',
+      summary: 'Choisissez un guide rapide pour cette page ou le parcours complet de configuration.',
+      page_guide: 'Guider cette page',
+      page_guide_unavailable: 'Aucun guide n’est encore disponible pour cette page. Utilisez plutôt l’onboarding.',
+      onboarding: 'Onboarding pour nouveaux utilisateurs',
+      onboarding_description: 'Commencez par les imports, terminez les bases, puis vérifiez vos tâches.',
+    },
+    onboarding: {
+      title: 'Commencer la configuration',
+      summary: 'C’est le premier passage recommandé pour les nouveaux utilisateurs ou ceux qui reviennent. Utilisez les boutons d’action pour ouvrir directement les vraies pages.',
+      actions: {
+        account: 'Ouvrir le compte',
+        login: 'Se connecter',
+      },
+      steps: {
+        import: {
+          title: 'Importer votre progression d’abord',
+          description: 'Utilisez les imports avant toute configuration manuelle. C’est le moyen le plus rapide de remettre la plus grande partie de votre tracker dans un état utile.',
+          bullets: {
+            one: 'Importez d’abord votre profil Tarkov.dev si vous l’avez. Cela remplit généralement l’essentiel des informations du compte et de la progression suivie.',
+            two: 'Importez ensuite vos journaux EFT. Cela peut compléter les quêtes et d’autres éléments de progression avec presque aucun clic manuel.',
+            three: 'Si les deux imports se passent bien, la configuration manuelle devient une simple vérification au lieu d’une reconstruction complète à la main.',
+          },
+          actions: {
+            open: 'Ouvrir les imports',
+          },
+        },
+        profile: {
+          title: 'Finaliser les bases',
+          description: 'Après les imports, renseignez les champs principaux du profil et décidez si vous voulez synchroniser votre progression avec un compte.',
+          bullets: {
+            one: 'Définissez votre mode de jeu, édition, niveau, faction et nom affiché afin que les filtres et conditions de déblocage correspondent à votre vrai compte.',
+            two: 'Se connecter débloque les équipes, les fonctionnalités basées sur l’API et le stockage cloud, ce qui facilite la conservation de la progression entre les appareils.',
+            three: 'Si vous ne voulez pas encore vous connecter, vous pouvez tout de même commencer en local puis rattacher cette progression à un compte plus tard.',
+          },
+          actions: {
+            settings: 'Ouvrir les paramètres',
+          },
+        },
+        tasks: {
+          title: 'Vérifier les tâches',
+          description: 'La dernière étape de nettoyage à fort impact concerne la disponibilité des tâches. Une fois cela correct, le reste du site devient bien plus fiable.',
+          bullets: {
+            one: 'Sur la page des tâches, marquez les quêtes actuellement disponibles en jeu pour chaque marchand. Cela reconstitue les chaînes de prérequis bien plus vite que de compléter les anciennes tâches une par une.',
+            two: 'Si quelque chose paraît faux, utilisez le menu de la carte de tâche pour signaler un problème de données au lieu de forcer votre tracker dans un mauvais état.',
+            three: 'Après ce passage, utilisez le bouton d’aide de la barre supérieure sur n’importe quelle page compatible pour rouvrir le guide de la page ou cet onboarding.',
+          },
+          actions: {
+            open: 'Ouvrir les tâches',
+          },
+        },
+      },
+    },
+    dashboard: {
+      title: 'Guide du tableau de bord',
+      summary: 'Utilisez le tableau de bord pour repérer votre meilleur prochain pas, revoir la progression et ouvrir les pages qui demandent de l’attention.',
+      hint: 'Obtenez un aperçu rapide de ce que montre le tableau de bord et de l’endroit où cliquer ensuite.',
+      sections: {
+        focus: {
+          title: 'Meilleur prochain pas',
+          description: 'La carte du haut met en avant la progression immédiate la plus évidente selon vos filtres actuels et votre progression suivie.',
+          bullet_one: 'Utilisez-la quand vous voulez une recommandation forte plutôt que parcourir toute la liste des tâches.',
+          bullet_two: 'Si elle semble incorrecte, vérifiez d’abord vos filtres de tâches, car des tâches masquées peuvent changer la recommandation.',
+        },
+        progress: {
+          title: 'Cartes de progression',
+          description: 'Les cartes de progression sont des raccourcis vers les tâches et les objets nécessaires, avec vos totaux actuels déjà mis en contexte.',
+          bullet_one: 'Les cartes de tâches et d’objectifs vous ramènent vers votre liste de quêtes.',
+          bullet_two: 'Les cartes d’objets ouvrent directement la vue correspondante des objets nécessaires pour les tâches ou la planque.',
+        },
+        review: {
+          title: 'Vue d’ensemble à plus long terme',
+          description: 'Les sections marchands et jalons servent à vérifier la progression globale, pas seulement votre prochain clic.',
+          bullet_one: 'Utilisez les marchands pour voir quelles lignes de quêtes demandent encore le plus de travail.',
+          bullet_two: 'Utilisez les jalons pour vérifier Kappa, Lightkeeper et le rythme global de progression d’un seul coup d’œil.',
+        },
+      },
+      actions: {
+        tasks: 'Ouvrir les tâches',
+        needed_items: 'Ouvrir les objets nécessaires',
+      },
+    },
+    tasks: {
+      title: 'Guide des tâches',
+      summary: 'Utilisez la page des tâches pour parcourir le travail disponible, changer de perspective et réduire la liste exactement à ce que vous voulez prioriser.',
+      hint: 'Obtenez une explication rapide des vues de tâches, des filtres et de l’emplacement des paramètres importants.',
+      sections: {
+        views: {
+          title: 'Choisir une vue',
+          description: 'La rangée du haut change la façon dont les tâches sont regroupées afin que vous puissiez naviguer par liste, marchand, carte ou graphe.',
+          bullet_one: 'La vue liste est la meilleure pour les vérifications normales de progression et la recherche rapide.',
+          bullet_two: 'Les vues marchand, carte et graphe sont plus utiles quand vous savez déjà sous quel angle vous voulez analyser.',
+        },
+        filters: {
+          title: 'Réduire la liste',
+          description: 'Les filtres de statut vous permettent de vous concentrer sur ce qui est disponible maintenant, verrouillé, terminé ou échoué sans quitter la page.',
+          bullet_one: 'La recherche fonctionne sur les noms de tâches et aide quand la liste paraît trop grande.',
+          bullet_two: 'Si un total semble plus bas que prévu, c’est généralement qu’un filtre de statut ou d’équipe masque des résultats.',
+        },
+        settings: {
+          title: 'Ajuster le comportement',
+          description: 'La roue dentée ouvre des préférences d’affichage et de filtrage qui modifient le comportement de la liste des tâches entre les sessions.',
+          bullet_one: 'Utilisez les paramètres si vous voulez d’autres filtres par défaut, une autre visibilité d’équipe ou un autre comportement des cartes.',
+          bullet_two: 'Si la page semble étrange, les paramètres sont le premier endroit à vérifier avant de supposer qu’il manque des données.',
+        },
+      },
+      actions: {
+        needed_items: 'Objets de tâches',
+        hideout: 'Ouvrir la planque',
+      },
+    },
+    needed_items: {
+      title: 'Guide des objets nécessaires',
+      summary: 'Utilisez les objets nécessaires pour combiner les matériaux des tâches et de la planque, puis réduire la liste exactement aux objets qui vous importent encore.',
+      hint: 'Obtenez une explication rapide des onglets, des modes d’affichage et des filtres derrière la roue dentée.',
+      sections: {
+        scopes: {
+          title: 'Choisir un périmètre',
+          description: 'Les onglets en haut basculent entre tous les objets, tâches uniquement, planque uniquement et besoins déjà complétés.',
+          bullet_one: 'Utilisez tâches uniquement quand vous faites des quêtes et que vous ne voulez pas mélanger les matériaux de planque.',
+          bullet_two: 'Utilisez complétés quand vous voulez revoir ce que vous avez déjà couvert plutôt que ce qu’il manque encore.',
+        },
+        views: {
+          title: 'Changer la présentation',
+          description: 'Les vues liste, grille et combinée affichent les mêmes données, mais sont optimisées pour différents styles de navigation.',
+          bullet_one: 'La vue liste est la plus rapide pour parcourir quantités et noms.',
+          bullet_two: 'La vue combinée regroupe les objets répétés quand les totaux vous importent plus que les sources individuelles.',
+        },
+        filters: {
+          title: 'Affiner la liste',
+          description: 'Le panneau de paramètres contrôle la visibilité des objets possédés, les règles TER, les besoins d’équipe et d’autres filtres à fort impact.',
+          bullet_one: 'Si un objet disparaît de façon inattendue, c’est généralement à cause d’un filtre du panneau.',
+          bullet_two: 'Le tri par priorité est idéal quand vous voulez voir d’abord les objets au plus fort impact.',
+        },
+      },
+      actions: {
+        tasks: 'Ouvrir les tâches',
+        hideout: 'Ouvrir la planque',
+      },
+    },
+    hideout: {
+      title: 'Guide de la planque',
+      summary: 'Utilisez la page de la planque pour voir quelles stations sont prêtes, ce qui est bloqué et quels matériaux comptent encore pour les prochaines améliorations.',
+      hint: 'Obtenez une explication rapide des statuts de planque, des règles de disponibilité et de l’emplacement des matériaux liés.',
+      sections: {
+        statuses: {
+          title: 'Lire les statuts',
+          description: 'Les filtres principaux séparent les stations en toutes, disponibles, verrouillées et au maximum afin que vous puissiez vous concentrer sur la bonne étape.',
+          bullet_one: 'Disponible est le moyen le plus rapide de voir ce que vous pouvez construire immédiatement.',
+          bullet_two: 'Verrouillé est utile quand vous voulez comprendre quelles exigences manquent encore.',
+        },
+        requirements: {
+          title: 'Contrôler les blocages',
+          description: 'Le menu des paramètres peut imposer les exigences de station, de compétence et de marchand afin que la disponibilité corresponde au niveau de rigueur souhaité.',
+          bullet_one: 'Activez les filtres d’exigences quand vous voulez seulement les améliorations entièrement constructibles tout de suite.',
+          bullet_two: 'Désactivez-les quand vous voulez une vue de planification plus large de ce qui arrive bientôt.',
+        },
+        materials: {
+          title: 'Suivre les matériaux',
+          description: 'Chaque carte de station montre les objets et prérequis de la prochaine amélioration, avec des liens vers le flux global des objets.',
+          bullet_one: 'Utilisez les cartes de station quand vous voulez les détails d’une amélioration sans quitter la page.',
+          bullet_two: 'Passez aux objets nécessaires quand vous voulez la liste complète des achats de planque sur l’ensemble des stations.',
+        },
+      },
+      actions: {
+        needed_items: 'Objets de planque',
+        tasks: 'Ouvrir les tâches',
+      },
+    },
   },
   import_confirm: {
     title: "Confirmer l'importation des données",
@@ -388,7 +567,8 @@
     tasks: {
       title: 'Quêtes',
       primary_views: {
-        all: 'Toutes',
+        all: 'Liste',
+        list: 'Liste',
         maps: 'Cartes',
         traders: 'Marchands',
         graph: 'Graphe',
@@ -417,6 +597,7 @@
         resize_handle: 'Ajuster la hauteur du graphe',
       },
       secondary_views: {
+        all: 'Toutes',
         available: 'Disponible',
         completed: 'Terminée',
         locked: 'Verrouillée',
@@ -723,6 +904,7 @@
       error: 'Unable to load needed items.',
       retry: 'Try again',
       filters: {
+        all: 'Toutes',
         label: 'Filtres',
         sections: {
           items: 'ARTICLES',
@@ -926,7 +1108,7 @@
       share_private_outro: ' pour rendre ce lien public.',
       share_public_enabled: 'This mode is public. Anyone with the link can view it.',
       share_private_enabled: 'This mode is private.',
-      mode_toggle_label: 'Select profile mode',
+      mode_toggle_label: 'Sélectionner le mode de profil',
       copy_snapshot: 'Copy Snapshot',
       view_tasks: 'Open Tasks',
       tab_overview: 'Vue d’ensemble',
