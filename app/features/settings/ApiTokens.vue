@@ -271,9 +271,10 @@
 </template>
 <script setup lang="ts">
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import { shouldFallbackToDirectTokenInsert } from '@/features/settings/apiTokenErrors';
+  import { useDiagnosticToast } from '@/composables/useDiagnosticToast';
   import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
   import { logger } from '@/utils/logger';
+  import { shouldFallbackForUnavailableTokenFunction } from '@/utils/tokenFunctionFallback';
   import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
   type ApiTokenInsertPayload = {
     game_mode: GameMode;
@@ -290,7 +291,6 @@
   interface SupabaseTable {
     select: (query: string) => SupabaseTable;
     insert: (data: ApiTokenInsertPayload) => SupabaseTable;
-    delete: () => SupabaseTable;
     eq: (column: string, value: string) => SupabaseTable;
     order: (column: string, options?: { ascending: boolean }) => SupabaseTable;
     single: () => Promise<{ data: { token_id: string } | null; error: SupabaseTokenError }>;
@@ -303,6 +303,8 @@
   const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
   const { $supabase } = useNuxtApp();
+  const runtimeConfig = useRuntimeConfig();
+  const { showErrorToast } = useDiagnosticToast();
   const edgeFunctions = useEdgeFunctions();
   const showCreateDialog = ref(false);
   const showTokenCreatedDialog = ref(false);
@@ -333,6 +335,9 @@
   );
   const canSubmit = computed(
     () => userLoggedIn.value && selectedPermissions.value.length > 0 && !!selectedGameMode.value
+  );
+  const allowDirectTokenCreateFallback = computed(
+    () => runtimeConfig.public.allowDirectTokenCreateFallback === true
   );
   const formatDate = (date: string | null) => {
     if (!date) return '';
@@ -440,9 +445,15 @@
         return;
       }
       logger.error('[ApiTokens] Failed to load tokens:', error);
-      toast.add({
-        title: t('page.settings.card.apitokens.create_token_error'),
-        color: 'error',
+      showErrorToast({
+        title: t('page.settings.card.apitokens.load_tokens_error'),
+        error,
+        context: {
+          action: 'load',
+          area: 'api_tokens',
+          userId,
+        },
+        reportTitle: t('page.settings.card.apitokens.report.load_failed'),
       });
     } finally {
       if (requestId === loadTokensRequestId) {
@@ -509,52 +520,34 @@
     };
     try {
       const rawToken = generateToken(selectedGameMode.value);
+      let response: { tokenId?: string; tokenValue?: string } | null = null;
       try {
-        const response = await edgeFunctions.createToken({
+        response = await edgeFunctions.createToken({
           permissions: selectedPermissions.value,
           gameMode: selectedGameMode.value,
           note: note.value || null,
           tokenValue: supportsRawTokens.value ? rawToken : undefined,
         });
-        if (!isCurrentTokenCreate(requestId, userId)) {
-          return;
-        }
-        const tokenId = (response as { tokenId?: string })?.tokenId || null;
-        const tokenValue = (response as { tokenValue?: string })?.tokenValue || rawToken;
-        generatedToken.value = tokenValue;
-        toast.add({
-          title: t('page.settings.card.apitokens.create_token_success'),
-          color: 'success',
-        });
-        showCreateDialog.value = false;
-        showTokenCreatedDialog.value = true;
-        await loadTokens();
-        if (!isCurrentTokenCreate(requestId, userId)) {
-          return;
-        }
-        if (tokenId && !supportsRawTokens.value) {
-          const created = tokens.value.find((token) => token.id === tokenId);
-          if (created) created.tokenValue = tokenValue;
-        }
-        resetForm();
-        return;
-      } catch (gatewayError) {
-        if (!isCurrentTokenCreate(requestId, userId)) {
-          return;
-        }
-        if (!shouldFallbackToDirectTokenInsert(gatewayError)) {
-          throw gatewayError;
+      } catch (error) {
+        if (
+          !allowDirectTokenCreateFallback.value ||
+          !shouldFallbackForUnavailableTokenFunction(error)
+        ) {
+          throw error;
         }
         logger.warn(
-          '[ApiTokens] Gateway create failed, falling back to direct insert:',
-          gatewayError
+          '[ApiTokens] token-create unavailable, falling back to direct insert via opt-in flag:',
+          error
         );
+        const tokenId = await createTokenDirect(rawToken);
+        response = { tokenId: tokenId || undefined, tokenValue: rawToken };
       }
-      const newTokenId = await createTokenDirect(rawToken);
       if (!isCurrentTokenCreate(requestId, userId)) {
         return;
       }
-      generatedToken.value = rawToken;
+      const tokenId = (response as { tokenId?: string })?.tokenId || null;
+      const tokenValue = (response as { tokenValue?: string })?.tokenValue || rawToken;
+      generatedToken.value = tokenValue;
       toast.add({
         title: t('page.settings.card.apitokens.create_token_success'),
         color: 'success',
@@ -565,9 +558,9 @@
       if (!isCurrentTokenCreate(requestId, userId)) {
         return;
       }
-      if (newTokenId && !supportsRawTokens.value) {
-        const created = tokens.value.find((token) => token.id === newTokenId);
-        if (created) created.tokenValue = rawToken;
+      if (tokenId && !supportsRawTokens.value) {
+        const created = tokens.value.find((token) => token.id === tokenId);
+        if (created) created.tokenValue = tokenValue;
       }
       resetForm();
     } catch (error) {
@@ -575,9 +568,17 @@
         return;
       }
       logger.error('[ApiTokens] Failed to create token:', error);
-      toast.add({
+      showErrorToast({
         title: t('page.settings.card.apitokens.create_token_error'),
-        color: 'error',
+        error,
+        context: {
+          action: 'create',
+          area: 'api_tokens',
+          gameMode: selectedGameMode.value,
+          permissionCount: selectedPermissions.value.length,
+          userId,
+        },
+        reportTitle: t('page.settings.card.apitokens.report.create_failed'),
       });
     } finally {
       if (requestId === createTokenRequestId) {
@@ -637,9 +638,16 @@
       await loadTokens();
     } catch (error) {
       logger.error('[ApiTokens] Failed to revoke token:', error);
-      toast.add({
+      showErrorToast({
         title: t('page.settings.card.apitokens.token_revoke_error'),
-        color: 'error',
+        error,
+        context: {
+          action: 'revoke',
+          area: 'api_tokens',
+          tokenId,
+          userId: getActiveUserId(),
+        },
+        reportTitle: t('page.settings.card.apitokens.report.revoke_failed'),
       });
     } finally {
       revokingId.value = null;

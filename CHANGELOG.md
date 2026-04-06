@@ -1,3 +1,38 @@
+# [1.29.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.8...v1.29.0) (2026-04-06)
+
+
+### Features
+
+* change TarkovMonitor link to the new page ([fb11d48](https://github.com/tarkovtracker-org/TarkovTracker/commit/fb11d489bf6e807d6a178aba248efe45930ad402))
+
+## [1.28.8](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.7...v1.28.8) (2026-04-05)
+
+
+### Bug Fixes
+
+* **api:** harden edge function auth ([09a4b0a](https://github.com/tarkovtracker-org/TarkovTracker/commit/09a4b0a1fa66567be452ecdf17dedeb357c414d8))
+
+## [1.28.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.6...v1.28.7) (2026-04-05)
+
+
+### Bug Fixes
+
+* improve auth diagnostics and refresh project docs ([2f909b3](https://github.com/tarkovtracker-org/TarkovTracker/commit/2f909b330a3689a10a35a4651a7e17a47c3a3eca))
+
+## [1.28.6](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.5...v1.28.6) (2026-04-03)
+
+
+### Bug Fixes
+
+* update bug-report page link to temp issue ([f59d422](https://github.com/tarkovtracker-org/TarkovTracker/commit/f59d42265efc5cdf47410eca9ca42a4758860ec3))
+
+## [1.28.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.4...v1.28.5) (2026-03-29)
+
+
+### Bug Fixes
+
+* **app:** preserve newer local preferences during sync ([#240](https://github.com/tarkovtracker-org/TarkovTracker/issues/240)) ([5ce73bf](https://github.com/tarkovtracker-org/TarkovTracker/commit/5ce73bf5a3be21a8642932235c5a49b538fd7474))
+
 ## [1.28.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.3...v1.28.4) (2026-03-28)
 
 

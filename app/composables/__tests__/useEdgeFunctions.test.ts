@@ -2,6 +2,7 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mockFetch = vi.fn();
+const mockSupabaseReady = vi.fn();
 const runtimeConfig = {
   public: {} as Record<string, string>,
 };
@@ -10,6 +11,13 @@ const mockSupabaseClient = {
     getSession: vi.fn(),
     refreshSession: vi.fn(),
   },
+  from: vi.fn(() => {
+    const table = {
+      delete: vi.fn(() => table),
+      eq: vi.fn(() => table),
+    };
+    return table;
+  }),
   functions: {
     invoke: vi.fn(),
   },
@@ -23,6 +31,7 @@ mockNuxtImport('useRouter', () => () => ({
 mockNuxtImport('useNuxtApp', () => () => ({
   $supabase: {
     client: mockSupabaseClient,
+    ready: mockSupabaseReady,
   },
 }));
 mockNuxtImport('useRuntimeConfig', () => () => ({
@@ -41,6 +50,7 @@ describe('useEdgeFunctions.getTeamMembers', () => {
     vi.clearAllMocks();
     vi.stubGlobal('$fetch', mockFetch);
     runtimeConfig.public = {};
+    mockSupabaseReady.mockResolvedValue(undefined);
     mockSupabaseClient.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'token-1' } },
       error: null,
@@ -115,12 +125,47 @@ describe('useEdgeFunctions.getTeamMembers', () => {
     expect(mockSupabaseClient.functions.invoke).not.toHaveBeenCalled();
   });
 });
+describe('useEdgeFunctions.team mutations', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.stubGlobal('$fetch', mockFetch);
+    runtimeConfig.public = {
+      teamGatewayUrl: 'https://legacy-gateway.tarkovtracker.test',
+    };
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  it('invokes Supabase directly for team creation even when a gateway URL is configured', async () => {
+    mockSupabaseClient.functions.invoke.mockResolvedValue({
+      data: { success: true },
+      error: null,
+    });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(edgeFunctions.createTeam('Alpha', 'join-code', 5, 'pve')).resolves.toEqual({
+      success: true,
+    });
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('team-create', {
+      body: {
+        game_mode: 'pve',
+        join_code: 'join-code',
+        maxMembers: 5,
+        name: 'Alpha',
+      },
+      method: 'POST',
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
 describe('useEdgeFunctions.createToken', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     vi.stubGlobal('$fetch', mockFetch);
     runtimeConfig.public = {
+      teamGatewayUrl: 'https://legacy-gateway.tarkovtracker.test',
       tokenGatewayUrl: 'https://gateway.tarkovtracker.test',
     };
     mockSupabaseClient.auth.getSession.mockResolvedValue({
@@ -131,55 +176,139 @@ describe('useEdgeFunctions.createToken', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
-  it('does not bypass token gateway policy errors with a Supabase fallback', async () => {
-    const rateLimitError = { status: 429, data: { message: 'Too many requests' } };
-    mockFetch.mockRejectedValueOnce(rateLimitError);
+  it('invokes Supabase directly even when gateway URLs are configured', async () => {
+    mockSupabaseClient.functions.invoke.mockResolvedValue({
+      data: { tokenValue: 'PVP_deadbeef' },
+      error: null,
+    });
     const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
     const edgeFunctions = useEdgeFunctions();
-    await expect(edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })).rejects.toBe(
-      rateLimitError
-    );
+    await expect(
+      edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
+    ).resolves.toEqual({ tokenValue: 'PVP_deadbeef' });
+    expect(mockSupabaseReady).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('token-create', {
+      body: { gameMode: 'pvp', permissions: ['GP'] },
+      method: 'POST',
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+  it('fails locally when no authenticated session is available', async () => {
+    mockSupabaseClient.auth.getSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    mockSupabaseClient.auth.refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(
+      edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
+    ).rejects.toThrow('User not authenticated');
+    expect(mockSupabaseReady).toHaveBeenCalledTimes(1);
     expect(mockSupabaseClient.functions.invoke).not.toHaveBeenCalled();
   });
-  it('falls back to Supabase when the token gateway is unavailable', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('fetch failed'));
-    mockSupabaseClient.functions.invoke.mockResolvedValue({
-      data: { tokenValue: 'PVP_deadbeef' },
-      error: null,
-    });
-    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
-    const edgeFunctions = useEdgeFunctions();
-    await expect(
-      edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
-    ).resolves.toEqual({ tokenValue: 'PVP_deadbeef' });
-    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('token-create', {
-      body: { gameMode: 'pvp', permissions: ['GP'] },
-      method: 'POST',
-    });
-  });
-  it('falls back to Supabase when legacy team gateways do not expose token routes', async () => {
-    runtimeConfig.public = {
-      teamGatewayUrl: 'https://legacy-gateway.tarkovtracker.test',
+  it('refreshes once and retries when the first invoke returns 401', async () => {
+    const authError = {
+      context: new Response(JSON.stringify({ error: 'Invalid JWT' }), {
+        headers: {
+          'content-type': 'application/json',
+        },
+        status: 401,
+        statusText: 'Unauthorized',
+      }),
+      message: 'Edge Function returned a non-2xx status code',
     };
-    mockFetch.mockRejectedValueOnce({ status: 404, data: { message: 'Not found' } });
-    mockSupabaseClient.functions.invoke.mockResolvedValue({
-      data: { tokenValue: 'PVP_deadbeef' },
+    mockSupabaseClient.functions.invoke
+      .mockResolvedValueOnce({
+        data: null,
+        error: authError,
+      })
+      .mockResolvedValueOnce({
+        data: { tokenValue: 'PVP_refreshed' },
+        error: null,
+      });
+    mockSupabaseClient.auth.refreshSession.mockResolvedValue({
+      data: { session: { access_token: 'token-2' } },
       error: null,
     });
     const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
     const edgeFunctions = useEdgeFunctions();
     await expect(
       edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
-    ).resolves.toEqual({ tokenValue: 'PVP_deadbeef' });
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://legacy-gateway.tarkovtracker.test/token/create',
-      expect.objectContaining({
-        method: 'POST',
-      })
-    );
-    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('token-create', {
-      body: { gameMode: 'pvp', permissions: ['GP'] },
-      method: 'POST',
+    ).resolves.toEqual({ tokenValue: 'PVP_refreshed' });
+    expect(mockSupabaseReady).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseClient.auth.refreshSession).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledTimes(2);
+  });
+  it('normalizes Supabase function HTTP errors with response details', async () => {
+    const rateLimitError = {
+      context: new Response(JSON.stringify({ message: 'Too many requests' }), {
+        headers: {
+          'content-type': 'application/json',
+        },
+        status: 429,
+        statusText: 'Too Many Requests',
+      }),
+      message: 'Edge Function returned a non-2xx status code',
+    };
+    mockSupabaseClient.functions.invoke.mockResolvedValue({
+      data: null,
+      error: rateLimitError,
     });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(
+      edgeFunctions.createToken({ permissions: ['GP'], gameMode: 'pvp' })
+    ).rejects.toMatchObject({
+      code: 'FUNCTION_HTTP_ERROR',
+      data: { message: 'Too many requests' },
+      functionName: 'token-create',
+      message: 'Edge Function returned a non-2xx status code',
+      name: 'SupabaseFunctionError',
+      status: 429,
+      statusText: 'Too Many Requests',
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+  it('uses DELETE invocation for token revoke', async () => {
+    mockSupabaseClient.functions.invoke.mockResolvedValue({
+      data: { success: true },
+      error: null,
+    });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(edgeFunctions.revokeToken('token-1')).resolves.toEqual({ success: true });
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('token-revoke', {
+      body: { tokenId: 'token-1' },
+      method: 'DELETE',
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+  it('falls back to direct delete when token-revoke is unavailable', async () => {
+    const deleteEq = vi.fn(() => ({ error: null }));
+    const deleteFn = vi.fn(() => ({
+      eq: deleteEq,
+    }));
+    mockSupabaseClient.from.mockReturnValueOnce({
+      delete: deleteFn,
+      eq: vi.fn(),
+    } as never);
+    mockSupabaseClient.functions.invoke.mockResolvedValue({
+      data: null,
+      error: { status: 404, data: { message: 'Not found' } },
+    });
+    const { useEdgeFunctions } = await import('@/composables/api/useEdgeFunctions');
+    const edgeFunctions = useEdgeFunctions();
+    await expect(edgeFunctions.revokeToken('token-1')).resolves.toEqual({ success: true });
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith('token-revoke', {
+      body: { tokenId: 'token-1' },
+      method: 'DELETE',
+    });
+    expect(mockSupabaseClient.from).toHaveBeenCalledWith('api_tokens');
+    expect(deleteFn).toHaveBeenCalledTimes(1);
+    expect(deleteEq).toHaveBeenCalledWith('token_id', 'token-1');
   });
 });
