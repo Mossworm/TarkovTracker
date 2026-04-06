@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.8...v1.29.0) (2026-04-06)
+
+
+### Features
+
+* change TarkovMonitor link to the new page ([fb11d48](https://github.com/tarkovtracker-org/TarkovTracker/commit/fb11d489bf6e807d6a178aba248efe45930ad402))
+
 ## [1.28.8](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.28.7...v1.28.8) (2026-04-05)
 
 
