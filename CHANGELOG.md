@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.30.0...v1.31.0) (2026-04-09)
+
+
+### Features
+
+* add prestige management and history controls ([beececd](https://github.com/tarkovtracker-org/TarkovTracker/commit/beececd70762b745a93548935211189d8b1de6f3))
+
 # [1.30.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.29.0...v1.30.0) (2026-04-06)
 
 
