@@ -171,8 +171,11 @@ describe('Tarkov API handlers', () => {
   it('builds expected cache key for prestige', async () => {
     const { default: handler } = await import('@/server/api/tarkov/prestige.get');
     await handler(event);
-    expect(mockCreateTarkovFetcher).toHaveBeenCalledWith('PRESTIGE_QUERY', { lang: 'en' });
-    expect(mockEdgeCache).toHaveBeenCalledWith(event, 'prestige-en', expect.any(Function), 222, {
+    expect(mockCreateTarkovFetcher).toHaveBeenCalledWith('PRESTIGE_QUERY', {
+      gameMode: 'regular',
+      lang: 'en',
+    });
+    expect(mockEdgeCache).toHaveBeenCalledWith(event, 'prestige-v2-en', expect.any(Function), 222, {
       cacheKeyPrefix: 'tarkov',
     });
   });

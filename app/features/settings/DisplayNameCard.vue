@@ -1,105 +1,125 @@
 <template>
   <GenericCard
-    icon="mdi-account-edit"
-    icon-color="primary"
-    highlight-color="primary"
-    :title="$t('settings.display_name.title')"
+    icon="mdi-gamepad-variant"
+    icon-color="accent"
+    highlight-color="accent"
+    :title="$t('settings.game_settings.title')"
     title-classes="text-lg font-semibold"
   >
     <template #content>
-      <form
-        class="space-y-2 px-4 py-4"
-        @click="handleDisplayNameContainerClick"
-        @submit.prevent="saveDisplayName"
-      >
-        <div class="flex items-center gap-2">
-          <label
-            :for="displayNameInputId"
-            class="text-surface-200 cursor-text text-sm font-semibold"
-            @click.prevent="focusDisplayNameInput"
-          >
-            {{ $t('settings.display_name.label') }}
-          </label>
-          <UTooltip :text="$t('settings.display_name.explanation')">
-            <UIcon name="i-mdi-information" class="text-surface-400 h-4 w-4" />
-          </UTooltip>
-        </div>
-        <UFormField name="displayName" :error="displayNameError" class="space-y-0">
-          <div class="flex flex-wrap items-start gap-2">
-            <UInput
-              :id="displayNameInputId"
-              v-model="localDisplayName"
-              :maxlength="DISPLAY_NAME_MAX_LENGTH"
-              :placeholder="$t('settings.display_name.placeholder')"
-              name="display-name"
-              class="min-w-48 flex-1"
-            />
-            <UButton
-              type="submit"
-              icon="i-mdi-check"
-              color="primary"
-              variant="soft"
-              size="sm"
-              class="min-w-28"
-              :disabled="!hasDisplayNameChanges"
-              :aria-label="$t('settings.display_name.save')"
-            >
-              {{ $t('settings.display_name.save') }}
-            </UButton>
+      <div class="space-y-5 px-4 py-4">
+        <section class="space-y-3">
+          <div class="flex items-center gap-2">
+            <p class="text-surface-200 text-sm font-semibold">
+              {{ $t('settings.display_name.label') }}
+            </p>
+            <UTooltip :text="$t('settings.display_name.explanation')">
+              <UIcon name="i-mdi-information" class="text-surface-400 h-4 w-4" />
+            </UTooltip>
           </div>
-        </UFormField>
-        <p class="text-surface-400 text-xs">
-          {{
-            $t('settings.display_name.mode_hint', {
-              mode: currentModeLabel,
-            })
-          }}
-        </p>
-      </form>
+          <div class="grid gap-3 md:grid-cols-2">
+            <form
+              v-for="mode in DISPLAY_NAME_MODES"
+              :key="mode"
+              class="rounded-xl border p-3"
+              :class="getModePanelClass(mode)"
+              @submit.prevent="saveDisplayName(mode)"
+            >
+              <div class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <label
+                    :for="getDisplayNameInputId(mode)"
+                    class="inline-flex rounded-md border px-2 py-1 text-xs font-semibold tracking-[0.18em] uppercase"
+                    :class="getModeBadgeClass(mode)"
+                  >
+                    {{ getModeLabel(mode) }}
+                  </label>
+                </div>
+                <UFormField
+                  :name="`${mode}-display-name`"
+                  :error="getInlineDisplayNameError(mode)"
+                  class="space-y-0"
+                >
+                  <div class="flex flex-wrap items-start gap-2.5">
+                    <UInput
+                      :id="getDisplayNameInputId(mode)"
+                      v-model="localDisplayNames[mode]"
+                      :maxlength="DISPLAY_NAME_MAX_LENGTH"
+                      :placeholder="$t('settings.display_name.placeholder')"
+                      :name="`${mode}-display-name`"
+                      class="w-full sm:w-56"
+                    />
+                    <UButton
+                      type="submit"
+                      icon="i-mdi-check"
+                      :color="mode"
+                      variant="soft"
+                      size="sm"
+                      class="min-w-24"
+                      :disabled="!hasDisplayNameChanges(mode)"
+                      :aria-label="$t('settings.display_name.save')"
+                    >
+                      {{ $t('settings.display_name.save') }}
+                    </UButton>
+                  </div>
+                </UFormField>
+              </div>
+            </form>
+          </div>
+        </section>
+        <div class="h-px bg-white/6" />
+        <section class="max-w-sm space-y-2">
+          <label
+            :for="gameEditionInputId"
+            class="text-surface-200 block cursor-pointer text-sm font-semibold"
+          >
+            {{ $t('settings.game_profile.game_edition') }}
+          </label>
+          <SelectMenuFixed
+            :id="gameEditionInputId"
+            v-model="selectedGameEdition"
+            :items="gameEditionOptions"
+            value-key="value"
+          >
+            <template #leading>
+              <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
+            </template>
+          </SelectMenuFixed>
+        </section>
+      </div>
     </template>
   </GenericCard>
 </template>
 <script setup lang="ts">
   import GenericCard from '@/components/ui/GenericCard.vue';
+  import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { GAME_MODES, type GameMode } from '@/utils/constants';
   import { LIMITS } from '@/utils/constants';
   import { logger } from '@/utils/logger';
+  const DISPLAY_NAME_MODES = [
+    GAME_MODES.PVP,
+    GAME_MODES.PVE,
+  ] as const satisfies readonly GameMode[];
+  type DisplayNameMode = (typeof DISPLAY_NAME_MODES)[number];
   const { t } = useI18n({ useScope: 'global' });
-  const { trackDisplayNameSaved } = useProductAnalytics();
+  const { trackDisplayNameSaved, trackSettingChanged } = useProductAnalytics();
+  const metadataStore = useMetadataStore();
   const toast = useToast();
   const tarkovStore = useTarkovStore();
   const DISPLAY_NAME_MAX_LENGTH = LIMITS.DISPLAY_NAME_MAX_LENGTH;
-  const displayNameInputId = 'settings-display-name-input';
-  const focusDisplayNameInput = () => {
-    const target = document.getElementById(displayNameInputId);
-    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-      target.focus();
-      target.select();
-      return;
-    }
-    target?.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')?.focus();
-  };
-  const isInteractiveTarget = (target: EventTarget | null) =>
-    target instanceof HTMLElement &&
-    Boolean(target.closest('a,button,input,label,select,textarea,[role="button"]'));
-  const handleDisplayNameContainerClick = (event: MouseEvent) => {
-    if (isInteractiveTarget(event.target)) {
-      return;
-    }
-    focusDisplayNameInput();
-  };
-  const localDisplayName = ref(tarkovStore.getDisplayName() || '');
-  const displayName = computed(() => tarkovStore.getDisplayName());
-  const currentModeLabel = computed(() =>
-    (tarkovStore.getCurrentGameMode() || 'pvp').toUpperCase()
-  );
-  const hasDisplayNameChanges = computed(() => {
-    const trimmed = localDisplayName.value.trim();
-    const initial = displayName.value || '';
-    return trimmed !== initial && trimmed.length > 0;
+  const gameEditionInputId = 'settings-game-edition-input';
+  const currentGameMode = computed(() => tarkovStore.getCurrentGameMode() || GAME_MODES.PVP);
+  const localDisplayNames = reactive<Record<DisplayNameMode, string>>({
+    [GAME_MODES.PVP]: '',
+    [GAME_MODES.PVE]: '',
   });
-  const displayNameError = computed(() => {
-    const trimmed = localDisplayName.value.trim();
+  const getDisplayNameInputId = (mode: DisplayNameMode) => `settings-display-name-input-${mode}`;
+  const getModeLabel = (mode: DisplayNameMode) => t(`settings.game_settings.${mode}`);
+  const getStoredDisplayName = (mode: DisplayNameMode) =>
+    tarkovStore.getModeDisplayName(mode) || '';
+  const getDisplayNameValidationError = (mode: DisplayNameMode) => {
+    const trimmed = localDisplayNames[mode].trim();
     if (!trimmed.length) {
       return t('settings.display_name.empty_error');
     }
@@ -107,12 +127,31 @@
       return t('settings.display_name.max_error', { max: DISPLAY_NAME_MAX_LENGTH });
     }
     return undefined;
-  });
-  watch(displayName, (newName) => {
-    localDisplayName.value = newName || '';
-  });
-  const saveDisplayName = () => {
-    const validationError = displayNameError.value;
+  };
+  const getInlineDisplayNameError = (mode: DisplayNameMode) => {
+    if (!localDisplayNames[mode].length) {
+      return undefined;
+    }
+    return getDisplayNameValidationError(mode);
+  };
+  const hasDisplayNameChanges = (mode: DisplayNameMode) => {
+    const trimmed = localDisplayNames[mode].trim();
+    return trimmed !== getStoredDisplayName(mode) && trimmed.length > 0;
+  };
+  const getModeBadgeClass = (mode: DisplayNameMode) =>
+    mode === GAME_MODES.PVE
+      ? 'border-pve-500/30 bg-pve-700/25 text-pve-200'
+      : 'border-pvp-500/30 bg-pvp-700/25 text-pvp-200';
+  const getModePanelClass = (mode: DisplayNameMode) => {
+    if (currentGameMode.value !== mode) {
+      return 'border-white/8 bg-surface-950/40';
+    }
+    return mode === GAME_MODES.PVE
+      ? 'border-pve-500/30 bg-pve-950/15 ring-1 ring-pve-500/20'
+      : 'border-pvp-500/30 bg-pvp-950/15 ring-1 ring-pvp-500/20';
+  };
+  const saveDisplayName = (mode: DisplayNameMode) => {
+    const validationError = getDisplayNameValidationError(mode);
     if (validationError) {
       toast.add({
         title: t('settings.display_name.validation_error'),
@@ -121,18 +160,18 @@
       });
       return;
     }
-    const trimmedDisplayName = localDisplayName.value.trim();
+    const trimmedDisplayName = localDisplayNames[mode].trim();
     try {
-      tarkovStore.setDisplayName(trimmedDisplayName);
-      localDisplayName.value = trimmedDisplayName;
+      tarkovStore.setModeDisplayName(mode, trimmedDisplayName);
+      localDisplayNames[mode] = trimmedDisplayName;
       trackDisplayNameSaved({
-        gameMode: tarkovStore.getCurrentGameMode() || 'pvp',
+        gameMode: mode,
         length: trimmedDisplayName.length,
       });
       toast.add({
         title: t('settings.display_name.saved_title'),
         description: t('settings.display_name.saved_description', {
-          mode: currentModeLabel.value,
+          mode: getModeLabel(mode),
         }),
         color: 'success',
       });
@@ -145,4 +184,35 @@
       });
     }
   };
+  for (const mode of DISPLAY_NAME_MODES) {
+    watch(
+      () => tarkovStore.getModeDisplayName(mode),
+      (newName) => {
+        localDisplayNames[mode] = newName || '';
+      },
+      { immediate: true }
+    );
+  }
+  const gameEditionOptions = computed(() =>
+    metadataStore.editions.map((edition) => ({
+      label: edition.title,
+      value: edition.value,
+    }))
+  );
+  const selectedGameEdition = computed({
+    get(): number {
+      return tarkovStore.getGameEdition() || 1;
+    },
+    set(newValue: number) {
+      if (tarkovStore.getGameEdition() === newValue) {
+        return;
+      }
+      tarkovStore.setGameEdition(newValue || 1);
+      trackSettingChanged({
+        area: 'profile',
+        name: 'game_edition',
+        value: newValue || 1,
+      });
+    },
+  });
 </script>

@@ -135,6 +135,7 @@ export interface HideoutModule extends HideoutLevel {
 }
 export interface TaskObjective {
   id: string;
+  __typename?: string;
   description?: string;
   location?: { id: string; name?: string };
   maps?: { id: string; name?: string }[];
@@ -162,8 +163,12 @@ export interface TaskObjective {
   x?: number;
   y?: number;
   optional?: boolean;
+  playerLevel?: number;
+  skillLevel?: SkillRequirement;
+  hideoutStation?: { id: string; name?: string };
+  stationLevel?: number;
   taskId?: string;
-  task?: { id: string; name?: string };
+  task?: { id: string; name?: string; wikiLink?: string };
   status?: string[];
   /** All items that must be contained */
   containsAll?: TarkovItem[];

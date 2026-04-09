@@ -70,6 +70,7 @@ type IdleTask = {
   expiresAt: number;
 };
 const TASK_OBJECTIVES_CACHE_VERSION = 'v3';
+const PRESTIGE_CACHE_VERSION = 'v2';
 const idleQueue: IdleTask[] = [];
 let idleRunnerActive = false;
 const CACHE_PURGE_STORAGE_KEY = STORAGE_KEYS.cachePurgeAt;
@@ -1438,7 +1439,7 @@ export const useMetadataStore = defineStore('metadata', {
     async fetchPrestigeData(forceRefresh = false) {
       await this.fetchWithCache<TarkovPrestigeQueryResult>({
         cacheType: 'prestige' as CacheType,
-        cacheKey: 'all',
+        cacheKey: `all-${PRESTIGE_CACHE_VERSION}`,
         endpoint: '/api/tarkov/prestige',
         queryParams: { lang: this.languageCode },
         cacheTTL: CACHE_CONFIG.MAX_TTL,

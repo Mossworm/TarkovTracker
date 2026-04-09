@@ -106,6 +106,12 @@ mockNuxtImport('useRoute', () => () => ({
 }));
 mockNuxtImport('useSkillCalculation', () => () => mockSkillCalculation);
 mockNuxtImport('useToast', () => () => mockToast);
+const SelectMenuFixedStub = {
+  props: ['items', 'modelValue'],
+  emits: ['update:modelValue'],
+  template:
+    '<label data-testid="select-menu-fixed"><slot name="leading" /><select v-bind="$attrs" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in (items || [])" :key="item.value" :value="item.value">{{ item.label }}</option></select></label>',
+};
 const mountAppBar = async () => {
   const { default: AppBar } = await import('@/shell/AppBar.vue');
   return mount(AppBar, {
@@ -132,6 +138,7 @@ const mountAppBar = async () => {
             '<div><slot /><template v-for="(group, groupIndex) in (items || [])" :key="groupIndex"><button v-for="item in group" :key="item.label" type="button" :data-menu-item="item.label" @click="item.onSelect?.()">{{ item.label }}</button></template></div>',
         },
         UIcon: true,
+        SelectMenuFixed: SelectMenuFixedStub,
       },
     },
   });

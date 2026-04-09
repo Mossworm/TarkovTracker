@@ -16,6 +16,7 @@ const tarkovStore = {
   setLevel: vi.fn(),
   setPMCFaction: vi.fn(),
   setPrestigeLevel: vi.fn(),
+  syncPvpPrestigeLevel: vi.fn(),
   setTarkovDevProfile: vi.fn(),
   setTarkovUid: vi.fn(),
   switchGameMode: vi.fn(),
@@ -143,6 +144,12 @@ describe('useTarkovDevImport', () => {
     expect(tarkovStore.setPMCFaction).toHaveBeenCalledWith(parsedData.pmcFaction);
     expect(tarkovStore.setDisplayName).toHaveBeenCalledWith(parsedData.displayName);
     expect(tarkovStore.setPrestigeLevel).toHaveBeenCalledWith(parsedData.prestigeLevel);
+    expect(tarkovStore.syncPvpPrestigeLevel).not.toHaveBeenCalled();
+    const switchModeOrder = tarkovStore.switchGameMode.mock.invocationCallOrder[0];
+    const setPrestigeOrder = tarkovStore.setPrestigeLevel.mock.invocationCallOrder[0];
+    expect(switchModeOrder).toBeDefined();
+    expect(setPrestigeOrder).toBeDefined();
+    expect(switchModeOrder!).toBeLessThan(setPrestigeOrder!);
     expect(preferencesStore.setUseAutomaticLevelCalculation).toHaveBeenCalledWith(false);
     expect(tarkovStore.setLevel).toHaveBeenCalledWith(12);
     expect(mockSetTotalSkillLevel).toHaveBeenCalledWith('Endurance', 10);

@@ -32,8 +32,8 @@ export const TARKOV_ITEMS_LITE_QUERY = `
 `;
 // Query to fetch prestige levels and requirements
 export const TARKOV_PRESTIGE_QUERY = `
-  query TarkovPrestige {
-    prestige {
+  query TarkovPrestige($lang: LanguageCode, $gameMode: GameMode) {
+    prestige(lang: $lang, gameMode: $gameMode) {
       id
       name
       prestigeLevel
@@ -42,13 +42,47 @@ export const TARKOV_PRESTIGE_QUERY = `
       conditions {
         id
         description
+        type
+        optional
         __typename
+        ... on TaskObjectivePlayerLevel {
+          playerLevel
+        }
         ... on TaskObjectiveTaskStatus {
           task {
             id
             name
+            wikiLink
           }
           status
+        }
+        ... on TaskObjectiveSkill {
+          skillLevel {
+            name
+            level
+            skill {
+              id
+              name
+              imageLink
+            }
+          }
+        }
+        ... on TaskObjectiveHideoutStation {
+          stationLevel
+          hideoutStation {
+            id
+            name
+          }
+        }
+        ... on TaskObjectiveItem {
+          count
+          foundInRaid
+          items {
+            id
+            name
+            shortName
+            wikiLink
+          }
         }
       }
       rewards {

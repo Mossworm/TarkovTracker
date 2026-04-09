@@ -113,4 +113,26 @@ describe('mergeProgressData progress epoch', () => {
     expect(merged.level).toBe(35);
     expect(merged.progressEpoch).toBe(5);
   });
+  it('keeps a newer lower prestige level when its epoch is newer', () => {
+    const local = createProgressData({});
+    local.prestigeLevel = 4;
+    local.progressEpoch = 2;
+    const remote = createProgressData({});
+    remote.prestigeLevel = 2;
+    remote.progressEpoch = 3;
+    const merged = mergeProgressData(local, remote);
+    expect(merged.prestigeLevel).toBe(2);
+    expect(merged.progressEpoch).toBe(3);
+  });
+  it('keeps an older higher prestige level from overwriting a newer correction', () => {
+    const local = createProgressData({});
+    local.prestigeLevel = 2;
+    local.progressEpoch = 5;
+    const remote = createProgressData({});
+    remote.prestigeLevel = 4;
+    remote.progressEpoch = 4;
+    const merged = mergeProgressData(local, remote);
+    expect(merged.prestigeLevel).toBe(2);
+    expect(merged.progressEpoch).toBe(5);
+  });
 });

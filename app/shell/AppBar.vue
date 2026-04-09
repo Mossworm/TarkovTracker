@@ -69,28 +69,19 @@
             <UIcon name="i-mdi-github" class="text-surface-300 h-4.5 w-4.5 hover:text-white" />
           </a>
         </AppTooltip>
-        <label
-          class="focus-within:ring-primary-500 focus-within:ring-offset-surface-900 bg-surface-800/60 border-surface-700 flex min-h-8 items-center gap-1 rounded border px-2 focus-within:ring-2 focus-within:ring-offset-2"
+        <SelectMenuFixed
+          id="app-locale-select"
+          v-model="selectedLocale"
+          :items="localeItems"
+          :aria-label="t('settings.locale')"
+          value-key="value"
+          class="shrink-0"
+          :ui="localeSelectUi"
         >
-          <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4 shrink-0" />
-          <span class="sr-only">{{ t('settings.locale') }}</span>
-          <select
-            id="app-locale-select"
-            v-model="selectedLocale"
-            :aria-label="t('settings.locale')"
-            name="locale"
-            class="text-surface-200 h-6 bg-transparent py-1 text-xs leading-none font-medium focus:outline-none"
-          >
-            <option
-              v-for="item in localeItems"
-              :key="item.value"
-              :value="item.value"
-              class="bg-surface-900 text-surface-100"
-            >
-              {{ item.label }}
-            </option>
-          </select>
-        </label>
+          <template #leading>
+            <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4 shrink-0" />
+          </template>
+        </SelectMenuFixed>
         <!-- Account section -->
         <div class="bg-surface-700/50 mx-1 h-5 w-px" />
         <div class="flex min-w-[2.75rem] items-center justify-end sm:min-w-[10rem]">
@@ -351,6 +342,19 @@
       value: localeCode,
     }));
   });
+  const localeSelectUi = {
+    base: 'focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 bg-surface-800/60 border-surface-700 hover:bg-surface-800 flex min-h-8 items-center gap-1 rounded border px-2 py-1 ring-0 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2',
+    content:
+      'max-h-80 bg-surface-900 border border-surface-700 rounded-lg shadow-xl z-[9999] min-w-[var(--reka-combobox-trigger-width)]',
+    item: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded text-surface-300 data-[highlighted]:bg-surface-800 data-[highlighted]:text-white data-[state=checked]:bg-surface-700 data-[state=checked]:text-white data-[state=checked]:font-medium',
+    itemLabel: 'whitespace-nowrap uppercase',
+    itemTrailingIcon: 'text-surface-400 shrink-0 size-4',
+    leading: 'shrink-0 text-surface-300',
+    trailing: 'shrink-0 text-surface-400',
+    trailingIcon: 'text-surface-400 shrink-0 size-4',
+    value: 'text-surface-200 text-xs leading-none font-medium uppercase',
+    viewport: 'p-1 max-h-none overflow-visible',
+  } as const;
   let latestLocaleSwitchRequestId = 0;
   async function applyLocaleSelection(newLocale: string) {
     if (!isAvailableLocale(newLocale) || newLocale === locale.value) return;

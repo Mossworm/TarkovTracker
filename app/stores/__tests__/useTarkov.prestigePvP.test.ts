@@ -118,4 +118,29 @@ describe('useTarkov prestigePvP', () => {
     expect(store.pvp.prestigeLevel).toBe(1);
     expect(store.pvp.progressEpoch).toBe(4);
   });
+  it('archives PvP progress even when the active tab is set to PvE', async () => {
+    const store = useTarkovStore();
+    store.$patch((state) => {
+      state.currentGameMode = 'pve';
+      state.pvp.level = 18;
+      state.pvp.prestigeLevel = 1;
+      state.pvp.progressEpoch = 3;
+      state.pve.level = 27;
+      state.pve.progressEpoch = 8;
+    });
+    await store.prestigePvP();
+    expect(rpc).toHaveBeenCalledWith(
+      'archive_prestige_run_and_reset_progress',
+      expect.objectContaining({
+        p_current_game_mode: 'pve',
+        p_mode: 'pvp',
+        p_prestige_from: 1,
+        p_prestige_to: 2,
+      })
+    );
+    expect(store.pvp.level).toBe(1);
+    expect(store.pvp.prestigeLevel).toBe(2);
+    expect(store.pve.level).toBe(27);
+    expect(store.pve.progressEpoch).toBe(8);
+  });
 });

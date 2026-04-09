@@ -37,6 +37,7 @@ import {
 import {
   buildPrestigeResetData,
   buildPrestigeRunSummary,
+  clampPrestigeLevel,
   parsePrestigeRunRows,
   type PrestigeRunRecord,
   type UserPrestigeRunRow,
@@ -431,16 +432,38 @@ const tarkovActions = {
     await executeWithSyncPause(() => performReset('all', this));
     logger.debug('[TarkovStore] All data reset complete');
   },
+  async syncPvpPrestigeLevel(this: TarkovStoreInstance, level: number) {
+    const nextPrestigeLevel = clampPrestigeLevel(level);
+    const currentPrestigeLevel = clampPrestigeLevel(this.pvp.prestigeLevel || 0);
+    if (nextPrestigeLevel === currentPrestigeLevel) {
+      return;
+    }
+    const nextPvpData = cloneStateSnapshot(this.pvp);
+    nextPvpData.prestigeLevel = nextPrestigeLevel;
+    nextPvpData.progressEpoch = getNextProgressEpoch(this.pvp);
+    const { $supabase } = useNuxtApp();
+    if ($supabase.user.loggedIn && $supabase.user.id) {
+      const nextState = cloneStateSnapshot(this.$state);
+      nextState.pvp = nextPvpData;
+      const { error } = await $supabase.client
+        .from('user_progress')
+        .upsert(buildUpsertPayload($supabase.user.id, nextState));
+      if (error) {
+        throw new Error(`Failed to sync PvP prestige level: ${error.message}`);
+      }
+      recordLocalSyncTime();
+    }
+    this.$patch((state) => {
+      state.pvp = nextPvpData;
+    });
+  },
   async prestigePvP(this: TarkovStoreInstance) {
     const { $supabase } = useNuxtApp();
     const userId = $supabase.user.id;
     if (!$supabase.user.loggedIn || !userId) {
       throw new Error('User not logged in. Cannot prestige PvP profile.');
     }
-    if (this.currentGameMode !== GAME_MODES.PVP) {
-      throw new Error('PvP prestige is only available while PvP mode is active.');
-    }
-    const currentPrestige = Math.max(0, Math.min(6, Math.trunc(this.pvp.prestigeLevel || 0)));
+    const currentPrestige = clampPrestigeLevel(this.pvp.prestigeLevel || 0);
     if (currentPrestige >= 6) {
       throw new Error('Maximum prestige level reached.');
     }
@@ -496,6 +519,33 @@ const tarkovActions = {
       throw new Error(`Failed to load prestige history: ${error.message}`);
     }
     return parsePrestigeRunRows((data as UserPrestigeRunRow[]) || []);
+  },
+  async deletePrestigeRun(this: TarkovStoreInstance, runId: string, mode: 'pvp' | 'pve' = 'pvp') {
+    const { $supabase } = useNuxtApp();
+    const userId = $supabase.user.id;
+    if (!$supabase.user.loggedIn || !userId) {
+      throw new Error('User not logged in. Cannot delete prestige history.');
+    }
+    const normalizedRunId = runId.trim();
+    if (!normalizedRunId) {
+      throw new Error('Prestige history entry id is required.');
+    }
+    const { data, error } = await $supabase.client
+      .from('user_prestige_runs')
+      .delete()
+      .eq('id', normalizedRunId)
+      .eq('user_id', userId)
+      .eq('mode', mode)
+      .select('id')
+      .maybeSingle();
+    if (error) {
+      throw new Error(`Failed to delete prestige history: ${error.message}`);
+    }
+    if (!data?.id) {
+      throw new Error(
+        'Failed to delete prestige history: no archived run was removed. Apply the delete policy migration to Supabase.'
+      );
+    }
   },
   /**
    * Repair failed task states for existing users.
@@ -896,8 +946,10 @@ const tarkovActions = {
   resetPvPData(): Promise<void>;
   resetPvEData(): Promise<void>;
   resetAllData(): Promise<void>;
+  syncPvpPrestigeLevel(level: number): Promise<void>;
   prestigePvP(): Promise<void>;
   fetchPrestigeRuns(mode?: 'pvp' | 'pve', limit?: number): Promise<PrestigeRunRecord[]>;
+  deletePrestigeRun(runId: string, mode?: 'pvp' | 'pve'): Promise<void>;
   repairFailedTaskStates(): { pvpRepaired: number; pveRepaired: number };
   repairCompletedTaskObjectives(): { pvpRepaired: number; pveRepaired: number };
   repairGameModeFailedTasks(gameModeData: UserProgressData, tasksMap: Map<string, Task>): number;

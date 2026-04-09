@@ -187,6 +187,10 @@ export const getters = {
     const currentData = getCurrentData(state);
     return currentData.displayName === '' ? null : (currentData.displayName ?? null);
   },
+  getModeDisplayName: (state: UserState) => (mode: GameMode) => {
+    const modeData = mode === GAME_MODES.PVE ? state.pve : state.pvp;
+    return modeData.displayName === '' ? null : (modeData.displayName ?? null);
+  },
   getObjectiveCount: (state: UserState) => (objectiveId: string) =>
     getCurrentData(state)?.taskObjectives?.[objectiveId]?.count ?? 0,
   getHideoutPartCount: (state: UserState) => (objectiveId: string) =>
@@ -285,6 +289,10 @@ export const actions = {
   setDisplayName(this: UserState, name: string | null) {
     const currentData = getCurrentData(this);
     currentData.displayName = typeof name === 'string' ? name : null;
+  },
+  setModeDisplayName(this: UserState, mode: GameMode, name: string | null) {
+    const modeData = mode === GAME_MODES.PVE ? this.pve : this.pvp;
+    modeData.displayName = typeof name === 'string' ? name : null;
   },
   setXpOffset(this: UserState, offset: number) {
     const currentData = getCurrentData(this);

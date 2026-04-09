@@ -159,7 +159,7 @@
                   :disabled="getSkillOffset(skill.key) === 0"
                   @click="resetOffset(skill.key)"
                 >
-                  {{ $t('settings.reset') }}
+                  {{ $t('settings.skills.reset') }}
                 </UButton>
               </div>
             </div>
@@ -291,7 +291,7 @@
   const showInvalidSkillValueToast = () => {
     toast.add({
       id: 'skill-invalid-value-error',
-      title: t('settings.display_name.validation_error'),
+      title: t('settings.skills.validation_error'),
       description: t('settings.skills.valid_range', `Valid range: 0-${MAX_SKILL_LEVEL}`),
       color: 'error',
       icon: 'i-mdi-alert-circle',
