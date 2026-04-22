@@ -115,6 +115,7 @@
     "prepare": "husky || true",
     "preview": "nuxt preview",
     "setup": "bash scripts/setup-dev-environment.sh",
+    "supabase:check": "bash scripts/check-supabase-db.sh",
     "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts",
     "test": "vitest run --reporter=default --maxWorkers=2",
     "test:watch": "vitest --watch",
