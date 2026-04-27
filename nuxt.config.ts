@@ -84,6 +84,7 @@ const webApplicationSchema = {
 };
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+  telemetry: false,
   ssr: false,
   spaLoadingTemplate: true,
   srcDir: 'app',
