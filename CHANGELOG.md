@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.32.0...v1.33.0) (2026-04-28)
+
+
+### Features
+
+* **settings:** import Tarkov.dev profile URLs ([ba6985f](https://github.com/tarkovtracker-org/TarkovTracker/commit/ba6985ffc44ac038b31369380c5eeea790050615)), closes [#315](https://github.com/tarkovtracker-org/TarkovTracker/issues/315)
+
 # [1.32.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.31.3...v1.32.0) (2026-04-27)
 
 
