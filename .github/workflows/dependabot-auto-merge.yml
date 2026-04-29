@@ -48,6 +48,7 @@ jobs:
 
           case "$HEAD_REF" in
             dependabot/npm_and_yarn/lint-and-format-* | \
+            dependabot/npm_and_yarn/nuxt-ecosystem-* | \
             dependabot/npm_and_yarn/testing-tooling-* | \
             dependabot/npm_and_yarn/tailwind-tooling-* | \
             dependabot/npm_and_yarn/release-tooling-* | \
