@@ -1,0 +1,305 @@
+import { describe, expect, it, vi } from 'vitest';
+import {
+  adaptBootstrapResponse,
+  adaptHideoutResponse,
+  adaptItemsResponse,
+  adaptMapSpawnsResponse,
+  adaptPrestigeResponse,
+  adaptTaskObjectivesResponse,
+  adaptTaskRewardsResponse,
+  adaptTasksCoreResponse,
+  fetchTarkovJsonEndpoint,
+} from '@/server/utils/tarkov-json';
+type TestJsonFetcher = <T = unknown>(
+  url: string,
+  request: { headers: { Accept: string }; retry: number; timeout: number }
+) => Promise<T>;
+const createFetcher = (responses: Record<string, unknown>) =>
+  vi.fn(async (url: string) => {
+    const response = responses[url];
+    if (response instanceof Error) throw response;
+    if (response === undefined) throw new Error(`Unexpected URL: ${url}`);
+    return response;
+  }) as unknown as TestJsonFetcher;
+describe('fetchTarkovJsonEndpoint', () => {
+  it('merges English translations into the base response', async () => {
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/items': {
+        data: { items: { item1: { id: 'item1', name: 'item.name' } } },
+        translations: ['$.data.items.*.name'],
+      },
+      'https://json.tarkov.dev/regular/items_en': {
+        data: { 'item.name': 'Bandage' },
+      },
+    });
+    const result = await fetchTarkovJsonEndpoint<{ items: Record<string, { name: string }> }>(
+      'items',
+      {
+        deps: { fetcher },
+        lang: 'en',
+      }
+    );
+    expect(result.items.item1?.name).toBe('Bandage');
+  });
+  it('falls back to English translations when the primary language is missing a key', async () => {
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/tasks': {
+        data: { tasks: { task1: { id: 'task1', name: 'task.name' } } },
+        translations: ['$.data.tasks.*.name'],
+      },
+      'https://json.tarkov.dev/regular/tasks_de': {
+        data: {},
+      },
+      'https://json.tarkov.dev/regular/tasks_en': {
+        data: { 'task.name': 'Debut' },
+      },
+    });
+    const result = await fetchTarkovJsonEndpoint<{ tasks: Record<string, { name: string }> }>(
+      'tasks',
+      {
+        deps: { fetcher },
+        lang: 'de',
+      }
+    );
+    expect(result.tasks.task1?.name).toBe('Debut');
+  });
+  it('keeps the translation key when no translation exists', async () => {
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/maps': {
+        data: { maps: { map1: { id: 'map1', name: 'map.name' } } },
+        translations: ['$.data.maps.*.name'],
+      },
+      'https://json.tarkov.dev/regular/maps_de': {
+        data: {},
+      },
+      'https://json.tarkov.dev/regular/maps_en': {
+        data: {},
+      },
+    });
+    const result = await fetchTarkovJsonEndpoint<{ maps: Record<string, { name: string }> }>(
+      'maps',
+      {
+        deps: { fetcher },
+        lang: 'de',
+      }
+    );
+    expect(result.maps.map1?.name).toBe('map.name');
+  });
+  it('retries transient failures', async () => {
+    let baseAttempts = 0;
+    const fetcher = vi.fn(async (url: string) => {
+      if (url === 'https://json.tarkov.dev/regular/items') {
+        baseAttempts++;
+        if (baseAttempts === 1) throw new Error('network');
+        return { data: { items: {} }, translations: [] };
+      }
+      if (url === 'https://json.tarkov.dev/regular/items_en') {
+        return { data: {} };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    }) as unknown as TestJsonFetcher;
+    const sleep = vi.fn(async () => undefined);
+    const result = await fetchTarkovJsonEndpoint('items', {
+      deps: { fetcher, logger: { error: vi.fn(), warn: vi.fn() }, sleep },
+      lang: 'en',
+      maxRetries: 2,
+    });
+    expect(result).toEqual({ items: {} });
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+  it('throws for malformed envelopes', async () => {
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/items': { nope: true },
+      'https://json.tarkov.dev/regular/items_en': { data: {} },
+    });
+    await expect(
+      fetchTarkovJsonEndpoint('items', {
+        deps: { fetcher, logger: { error: vi.fn(), warn: vi.fn() } },
+        lang: 'en',
+        maxRetries: 1,
+      })
+    ).rejects.toThrow('missing data');
+  });
+});
+describe('tarkov JSON adapters', () => {
+  const itemsPayload = {
+    itemCategories: {
+      cat1: { id: 'cat1', name: 'Medical' },
+    },
+    items: {
+      item1: {
+        id: 'item1',
+        name: 'Salewa',
+        shortName: 'Salewa',
+        iconLink: 'icon.webp',
+        image512pxLink: 'image.webp',
+        backgroundColor: 'blue',
+        categories: ['cat1'],
+      },
+      item2: { id: 'item2', name: 'Roubles' },
+    },
+    playerLevels: [{ level: 1, exp: 0, levelBadgeImageLink: 'level.webp' }],
+  };
+  const mapsPayload = {
+    maps: {
+      map1: {
+        id: 'map1',
+        name: 'Customs',
+        normalizedName: 'customs',
+        spawns: [{ zoneName: 'spawn-a', position: { x: 1, y: 2, z: 3 } }],
+      },
+    },
+  };
+  const tradersPayload = {
+    trader1: { id: 'trader1', name: 'Prapor', levels: [{ id: 'trader1-1', level: 1 }] },
+  };
+  const hideoutPayload = {
+    station1: {
+      id: 'station1',
+      name: 'Medstation',
+      levels: [
+        {
+          id: 'station1-1',
+          level: 1,
+          constructionTime: 0,
+          itemRequirements: [
+            { id: 'req1', item: 'item1', count: 1, attributes: { foundInRaid: true } },
+          ],
+          stationLevelRequirements: [],
+          skillRequirements: [],
+          traderRequirements: [{ id: 'trader-req1', trader: 'trader1', value: 1 }],
+        },
+      ],
+    },
+  };
+  const tasksPayload = {
+    prestige: [
+      {
+        id: 'prestige1',
+        prestigeLevel: 1,
+        conditions: [
+          { id: 'level1', type: 'playerLevel', playerLevel: 47 },
+          { id: 'task-status1', type: 'taskStatus', task: 'task1', status: ['complete'] },
+          { id: 'station1', type: 'hideoutStation', station: 'station1', stationLevel: 1 },
+          { id: 'item-condition1', type: 'haveItem', items: ['item1'], count: 2 },
+        ],
+      },
+    ],
+    questItems: {
+      questItem1: {
+        id: 'questItem1',
+        name: 'Bronze pocket watch',
+        shortName: 'Watch',
+        iconLink: 'quest-icon.webp',
+      },
+    },
+    tasks: {
+      task1: {
+        id: 'task1',
+        name: 'Debut',
+        trader: 'trader1',
+        map: 'map1',
+        taskRequirements: [{ task: 'task0', status: ['complete'] }],
+        traderRequirements: [{ trader: 'trader1', value: 0.2 }],
+        objectives: [
+          {
+            id: 'objective1',
+            type: 'giveItem',
+            items: ['item1'],
+            maps: ['map1'],
+            count: 1,
+            requiredKeys: [['item1'], ['item2', 'missing-item']],
+          },
+          {
+            id: 'objective2',
+            type: 'findQuestItem',
+            questItem: 'questItem1',
+          },
+        ],
+        failConditions: [{ id: 'fail1', type: 'taskStatus', task: 'task2' }],
+        startRewards: { items: [{ item: 'item2', count: 1000 }] },
+        finishRewards: {
+          traderStanding: [{ trader: 'trader1', standing: 0.01 }],
+          items: [{ item: 'item1', count: 1 }],
+        },
+        failureOutcome: { skillLevelReward: [{ skill: 'Strength', level: 1 }] },
+      },
+    },
+  };
+  it('adapts items and bootstrap data', () => {
+    const items = adaptItemsResponse(itemsPayload).data.items;
+    expect(items[0]).toMatchObject({
+      category: { id: 'cat1', name: 'Medical' },
+      id: 'item1',
+      name: 'Salewa',
+    });
+    expect(adaptItemsResponse(itemsPayload, { lite: true }).data.items[0]).not.toHaveProperty(
+      'category'
+    );
+    expect(adaptBootstrapResponse(itemsPayload).data.playerLevels).toHaveLength(1);
+  });
+  it('adapts tasks, maps, and traders for core route data', () => {
+    const result = adaptTasksCoreResponse(tasksPayload, mapsPayload, tradersPayload).data;
+    expect(result.tasks[0]).toMatchObject({
+      id: 'task1',
+      map: { id: 'map1', name: 'Customs' },
+      trader: { id: 'trader1', name: 'Prapor' },
+    });
+    expect(result.maps[0]?.spawns).toHaveLength(1);
+    expect(result.traders[0]?.levels).toHaveLength(1);
+  });
+  it('adapts map spawns', () => {
+    expect(adaptMapSpawnsResponse(mapsPayload).data.maps[0]).toMatchObject({
+      id: 'map1',
+      spawns: [{ zoneName: 'spawn-a' }],
+    });
+  });
+  it('adapts task objectives and rewards', () => {
+    const objectives = adaptTaskObjectivesResponse(tasksPayload, {
+      hideoutPayload,
+      itemsPayload,
+      mapsPayload,
+      tradersPayload,
+    }).data.tasks[0];
+    expect(objectives?.objectives?.[0]).toMatchObject({
+      __typename: 'TaskObjectiveItem',
+      items: [{ id: 'item1', name: 'Salewa' }],
+      maps: [{ id: 'map1', name: 'Customs' }],
+      requiredKeys: [
+        [{ id: 'item1', name: 'Salewa' }],
+        [{ id: 'item2', name: 'Roubles' }, { id: 'missing-item' }],
+      ],
+    });
+    expect(objectives?.objectives?.[1]).toMatchObject({
+      __typename: 'TaskObjectiveQuestItem',
+      questItem: { id: 'questItem1', name: 'Bronze pocket watch' },
+    });
+    const rewards = adaptTaskRewardsResponse(tasksPayload, { itemsPayload, tradersPayload }).data
+      .tasks[0];
+    expect(rewards?.finishRewards?.items?.[0]?.item).toMatchObject({ id: 'item1' });
+    expect(rewards?.failureOutcome?.skillLevelReward?.[0]?.skill).toMatchObject({
+      name: 'Strength',
+    });
+  });
+  it('adapts hideout and prestige data', () => {
+    const hideout = adaptHideoutResponse(hideoutPayload, { itemsPayload, tradersPayload }).data;
+    expect(hideout.hideoutStations[0]?.levels[0]?.itemRequirements[0]).toMatchObject({
+      item: { id: 'item1', name: 'Salewa' },
+      quantity: 1,
+      attributes: [{ name: 'foundInRaid', type: 'foundInRaid', value: 'true' }],
+    });
+    const prestige = adaptPrestigeResponse(tasksPayload, {
+      hideoutPayload,
+      itemsPayload,
+      tradersPayload,
+    }).data.prestige[0];
+    expect(prestige?.conditions?.map((condition) => condition.__typename)).toEqual([
+      'TaskObjectivePlayerLevel',
+      'TaskObjectiveTaskStatus',
+      'TaskObjectiveHideoutStation',
+      'TaskObjectiveItem',
+    ]);
+    expect(prestige?.conditions?.[1]?.task).toMatchObject({ id: 'task1', name: 'Debut' });
+  });
+});

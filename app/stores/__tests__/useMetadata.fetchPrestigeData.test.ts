@@ -12,7 +12,7 @@ describe('useMetadataStore fetchPrestigeData', () => {
     await store.fetchPrestigeData();
     expect(fetchWithCacheSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        cacheKey: 'all-v2',
+        cacheKey: 'all-json-v1',
         cacheType: 'prestige',
         endpoint: '/api/tarkov/prestige',
       })

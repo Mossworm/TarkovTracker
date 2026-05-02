@@ -2,7 +2,7 @@
 
 ## Overview
 
-TarkovTracker provides internal API routes for fetching game data and team information. All game data is proxied through Nuxt server routes to the tarkov.dev GraphQL API with caching and overlay corrections applied.
+TarkovTracker provides internal API routes for fetching game data and team information. Game data is proxied through Nuxt server routes to `json.tarkov.dev` with caching and overlay corrections applied.
 
 ## Base URL
 

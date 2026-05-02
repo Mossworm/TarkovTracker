@@ -21,7 +21,7 @@ A comprehensive Escape from Tarkov progress tracker built with Nuxt 4, featuring
 - **Styling**: Tailwind CSS v4
 - **State Management**: Pinia with three-store architecture
 - **Backend**: Supabase (authentication, database, real-time)
-- **API**: Nuxt server-side proxy to tarkov.dev GraphQL API
+- **API**: Nuxt server-side proxy to json.tarkov.dev static data
 - **Deployment**: Cloudflare Pages
 
 ## Setup

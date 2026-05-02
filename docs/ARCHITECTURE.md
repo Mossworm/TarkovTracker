@@ -85,7 +85,7 @@ graph TB
 
     subgraph "External Services"
         Supabase[(Supabase<br/>Auth, DB, Realtime)]
-        TarkovDev[tarkov.dev<br/>GraphQL API]
+        TarkovDev[json.tarkov.dev<br/>Static Data]
         Overlay[GitHub Overlay<br/>Data Corrections]
     end
 
@@ -294,7 +294,7 @@ sequenceDiagram
 
 ### Tarkov Data API
 
-All game data is fetched through Nuxt server routes that proxy to tarkov.dev GraphQL API.
+All game data is fetched through Nuxt server routes that proxy to `json.tarkov.dev` static data.
 
 | Endpoint                       | Purpose              | Cache TTL |
 | ------------------------------ | -------------------- | --------- |
@@ -329,14 +329,14 @@ graph TD
     end
 
     subgraph "External"
-        GraphQL[tarkov.dev]
+        JsonData[json.tarkov.dev]
     end
 
     Request --> IDB
     IDB -- "Cache Miss" --> Edge
     Edge -- "Cache Miss" --> API
-    API --> GraphQL
-    GraphQL --> API
+    API --> JsonData
+    JsonData --> API
     API --> Edge
     Edge --> IDB
 

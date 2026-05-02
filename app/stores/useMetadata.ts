@@ -69,8 +69,10 @@ type IdleTask = {
   reject: (error: unknown) => void;
   expiresAt: number;
 };
-const TASK_OBJECTIVES_CACHE_VERSION = 'v3';
-const PRESTIGE_CACHE_VERSION = 'v2';
+const BOOTSTRAP_CACHE_VERSION = 'json-v1';
+const TASK_OBJECTIVES_CACHE_VERSION = 'json-v1';
+const PRESTIGE_CACHE_VERSION = 'json-v1';
+const ITEMS_CACHE_VERSION = 'json-v1';
 const idleQueue: IdleTask[] = [];
 let idleRunnerActive = false;
 const CACHE_PURGE_STORAGE_KEY = STORAGE_KEYS.cachePurgeAt;
@@ -287,6 +289,7 @@ interface MetadataState {
   itemsLoading: boolean;
   mapSpawnsLoading: boolean;
   itemsLanguage: string;
+  itemsGameMode: string;
   itemsFullLoaded: boolean;
   mapSpawnsLoaded: boolean;
   prestigeLoading: boolean;
@@ -364,6 +367,7 @@ export const useMetadataStore = defineStore('metadata', {
     itemsLoading: false,
     mapSpawnsLoading: false,
     itemsLanguage: 'en',
+    itemsGameMode: API_GAME_MODES[GAME_MODES.PVP],
     itemsFullLoaded: false,
     mapSpawnsLoaded: false,
     prestigeLoading: false,
@@ -706,17 +710,17 @@ export const useMetadataStore = defineStore('metadata', {
         const [tasksCore, hideout, prestige, editions] = await Promise.all([
           getCachedData<TarkovTasksCoreQueryResult>(
             'tasks-core' as CacheType,
-            apiGameMode,
+            `json-v1-${apiGameMode}`,
             this.languageCode
           ),
           getCachedData<TarkovHideoutQueryResult>(
             'hideout' as CacheType,
-            apiGameMode,
+            `json-v1-${apiGameMode}`,
             this.languageCode
           ),
           getCachedData<TarkovPrestigeQueryResult>(
             'prestige' as CacheType,
-            'all',
+            `all-${PRESTIGE_CACHE_VERSION}`,
             this.languageCode
           ),
           getCachedData<{ editions: GameEdition[]; storyChapters?: StoryChapter[] }>(
@@ -1115,11 +1119,12 @@ export const useMetadataStore = defineStore('metadata', {
      * Fetch minimal bootstrap data (player levels) to enable early UI rendering
      */
     async fetchBootstrapData(forceRefresh = false) {
+      const apiGameMode = this.getApiGameMode();
       await this.fetchWithCache<TarkovBootstrapQueryResult>({
         cacheType: 'bootstrap' as CacheType,
-        cacheKey: 'all',
+        cacheKey: `${BOOTSTRAP_CACHE_VERSION}-${apiGameMode}`,
         endpoint: '/api/tarkov/bootstrap',
-        queryParams: { lang: this.languageCode },
+        queryParams: { gameMode: apiGameMode, lang: this.languageCode },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
         processData: (data) => this.processBootstrapData(data),
         logName: 'Bootstrap',
@@ -1134,7 +1139,7 @@ export const useMetadataStore = defineStore('metadata', {
       const apiGameMode = this.getApiGameMode();
       await this.fetchWithCache<TarkovTasksCoreQueryResult>({
         cacheType: 'tasks-core' as CacheType,
-        cacheKey: apiGameMode,
+        cacheKey: `json-v1-${apiGameMode}`,
         endpoint: '/api/tarkov/tasks-core',
         queryParams: { lang: this.languageCode, gameMode: apiGameMode },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
@@ -1153,7 +1158,7 @@ export const useMetadataStore = defineStore('metadata', {
       const apiGameMode = this.getApiGameMode();
       await this.fetchWithCache<TarkovMapSpawnsQueryResult>({
         cacheType: 'map-spawns' as CacheType,
-        cacheKey: apiGameMode,
+        cacheKey: `json-v1-${apiGameMode}`,
         endpoint: '/api/tarkov/map-spawns',
         queryParams: { lang: this.languageCode, gameMode: apiGameMode },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
@@ -1315,7 +1320,7 @@ export const useMetadataStore = defineStore('metadata', {
       const apiGameMode = this.getApiGameMode();
       await this.fetchWithCache<TarkovTaskRewardsQueryResult>({
         cacheType: 'tasks-rewards' as CacheType,
-        cacheKey: apiGameMode,
+        cacheKey: `json-v1-${apiGameMode}`,
         endpoint: '/api/tarkov/tasks-rewards',
         queryParams: { lang: this.languageCode, gameMode: apiGameMode },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
@@ -1335,7 +1340,7 @@ export const useMetadataStore = defineStore('metadata', {
       const apiGameMode = this.getApiGameMode();
       await this.fetchWithCache<TarkovHideoutQueryResult>({
         cacheType: 'hideout' as CacheType,
-        cacheKey: apiGameMode,
+        cacheKey: `json-v1-${apiGameMode}`,
         endpoint: '/api/tarkov/hideout',
         queryParams: { lang: this.languageCode, gameMode: apiGameMode },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
@@ -1356,14 +1361,26 @@ export const useMetadataStore = defineStore('metadata', {
      * Fetch lightweight items data for early UI hydration
      */
     async fetchItemsLiteData(forceRefresh = false) {
-      if (this.itemsFullLoaded && this.itemsLanguage === this.languageCode && !forceRefresh) return;
-      if (this.items.length > 0 && this.itemsLanguage === this.languageCode && !forceRefresh)
+      const apiGameMode = this.getApiGameMode();
+      if (
+        this.itemsFullLoaded &&
+        this.itemsLanguage === this.languageCode &&
+        this.itemsGameMode === apiGameMode &&
+        !forceRefresh
+      )
+        return;
+      if (
+        this.items.length > 0 &&
+        this.itemsLanguage === this.languageCode &&
+        this.itemsGameMode === apiGameMode &&
+        !forceRefresh
+      )
         return;
       await this.fetchWithCache<TarkovItemsQueryResult>({
         cacheType: 'items-lite' as CacheType,
-        cacheKey: 'all',
+        cacheKey: `${ITEMS_CACHE_VERSION}-${apiGameMode}`,
         endpoint: '/api/tarkov/items-lite',
-        queryParams: { lang: this.languageCode },
+        queryParams: { gameMode: apiGameMode, lang: this.languageCode },
         cacheTTL: CACHE_CONFIG.MAX_TTL,
         loadingKey: 'itemsLoading',
         errorKey: 'itemsError',
@@ -1371,6 +1388,7 @@ export const useMetadataStore = defineStore('metadata', {
           this.items = markRaw(data.items || []);
           this.rebuildItemsIndex();
           this.itemsLanguage = this.languageCode;
+          this.itemsGameMode = apiGameMode;
           this.itemsFullLoaded = false;
           this.hydrateTaskItems();
           this.hydrateHideoutItems();
@@ -1379,6 +1397,7 @@ export const useMetadataStore = defineStore('metadata', {
           this.items = markRaw([]);
           this.itemsById = markRaw(new Map<string, TarkovItem>());
           this.itemsLanguage = this.languageCode;
+          this.itemsGameMode = apiGameMode;
           this.itemsFullLoaded = false;
         },
         logName: 'Items (lite)',
@@ -1387,15 +1406,22 @@ export const useMetadataStore = defineStore('metadata', {
       });
     },
     /**
-     * Fetch full items data (language-specific, not game-mode specific)
+     * Fetch full items data for the active language and game mode
      */
     async fetchItemsFullData(forceRefresh = false) {
-      if (this.itemsFullLoaded && this.itemsLanguage === this.languageCode && !forceRefresh) return;
+      const apiGameMode = this.getApiGameMode();
+      if (
+        this.itemsFullLoaded &&
+        this.itemsLanguage === this.languageCode &&
+        this.itemsGameMode === apiGameMode &&
+        !forceRefresh
+      )
+        return;
       await this.fetchWithCache<TarkovItemsQueryResult>({
         cacheType: 'items' as CacheType,
-        cacheKey: 'all',
+        cacheKey: `${ITEMS_CACHE_VERSION}-${apiGameMode}`,
         endpoint: '/api/tarkov/items',
-        queryParams: { lang: this.languageCode },
+        queryParams: { gameMode: apiGameMode, lang: this.languageCode },
         cacheTTL: CACHE_CONFIG.MAX_TTL,
         loadingKey: 'itemsLoading',
         errorKey: 'itemsError',
@@ -1403,6 +1429,7 @@ export const useMetadataStore = defineStore('metadata', {
           this.items = markRaw(data.items || []);
           this.rebuildItemsIndex();
           this.itemsLanguage = this.languageCode;
+          this.itemsGameMode = apiGameMode;
           this.itemsFullLoaded = true;
           this.hydrateTaskItems();
           this.hydrateHideoutItems();
@@ -1411,6 +1438,7 @@ export const useMetadataStore = defineStore('metadata', {
           this.items = markRaw([]);
           this.itemsById = markRaw(new Map<string, TarkovItem>());
           this.itemsLanguage = this.languageCode;
+          this.itemsGameMode = apiGameMode;
           this.itemsFullLoaded = false;
         },
         logName: 'Items (full)',
@@ -1425,7 +1453,14 @@ export const useMetadataStore = defineStore('metadata', {
       forceRefresh = false,
       options: { timeout?: number; minTime?: number; priority?: 'normal' | 'high' } = {}
     ) {
-      if (this.itemsFullLoaded && this.itemsLanguage === this.languageCode && !forceRefresh) return;
+      const apiGameMode = this.getApiGameMode();
+      if (
+        this.itemsFullLoaded &&
+        this.itemsLanguage === this.languageCode &&
+        this.itemsGameMode === apiGameMode &&
+        !forceRefresh
+      )
+        return;
       const { timeout = 800, minTime = 8, priority = 'high' } = options;
       return queueIdleTask(() => this.fetchItemsFullData(forceRefresh), {
         timeout,

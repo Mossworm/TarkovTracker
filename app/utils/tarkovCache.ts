@@ -14,7 +14,7 @@ import { perfEnabled, perfEnd, perfStart } from './perf';
 // Cache configuration
 export const CACHE_CONFIG = {
   DB_NAME: 'tarkov-tracker-cache',
-  DB_VERSION: 5, // Bumped to force cache clear after trimming item payloads
+  DB_VERSION: 6,
   STORE_NAME: 'tarkov-data',
   // 12 hours in milliseconds
   DEFAULT_TTL: 12 * 60 * 60 * 1000,
