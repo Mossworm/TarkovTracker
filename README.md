@@ -12,7 +12,7 @@ A comprehensive Escape from Tarkov progress tracker built with Nuxt 4, featuring
 - **Hideout Progress**: Track module upgrades and parts
 - **Player Level Progress**: Monitor leveling across different factions
 - **Real-time Sync**: Automatic synchronization via Supabase
-- **Multi-language Support**: Available in English, German, Spanish, French, Russian, Ukrainian, and Chinese
+- **Multi-language Support**: Available in English, German, Spanish, French, Russian, Ukrainian, and Chinese. Community translations are available through [translate.tarkovtracker.org](https://translate.tarkovtracker.org).
 
 ## Tech Stack
 
