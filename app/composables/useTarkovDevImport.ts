@@ -28,7 +28,9 @@ export function useTarkovDevImport(): UseTarkovDevImportReturn {
   const importState = ref<ImportState>('idle');
   const previewData = ref<TarkovDevImportResult | null>(null);
   const importError = ref<string | null>(null);
+  let profileUrlRequestId = 0;
   function reset(): void {
+    profileUrlRequestId++;
     importState.value = 'idle';
     previewData.value = null;
     importError.value = null;
@@ -64,9 +66,11 @@ export function useTarkovDevImport(): UseTarkovDevImportReturn {
     }
   }
   async function parseProfileUrl(profileUrl: string): Promise<TarkovDevProfileSource | null> {
+    const requestId = ++profileUrlRequestId;
     importError.value = null;
     const source = resolveTarkovDevProfileSource(profileUrl);
     if (!source.ok) {
+      if (requestId !== profileUrlRequestId) return null;
       importState.value = 'error';
       previewData.value = null;
       importError.value = source.error;
@@ -78,8 +82,10 @@ export function useTarkovDevImport(): UseTarkovDevImportReturn {
       const json = await $fetch<unknown>('/api/tarkov-dev/profile', {
         query: { url: source.data.profileJsonUrl },
       });
+      if (requestId !== profileUrlRequestId) return null;
       return applyProfilePayload(json) ? source.data : null;
     } catch (e) {
+      if (requestId !== profileUrlRequestId) return null;
       importState.value = 'error';
       importError.value =
         'Unable to fetch Tarkov.dev profile. Open the profile on Tarkov.dev, then try again.';

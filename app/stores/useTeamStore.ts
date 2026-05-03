@@ -388,13 +388,13 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
     },
     (newVal) => {
       if (!taskBroadcastInitialized) {
-        prevTaskCompletions = { ...newVal.taskCompletions };
+        prevTaskCompletions = structuredClone(newVal.taskCompletions);
         taskBroadcastInitialized = true;
         return;
       }
       const currentTeamId = getTeamIdFromSystemStore(systemStore);
       if (!currentTeamId || !teamChannel.value || !$supabase.user?.id) {
-        prevTaskCompletions = { ...newVal.taskCompletions };
+        prevTaskCompletions = structuredClone(newVal.taskCompletions);
         return;
       }
       const scheduleBroadcastFlush = () => {
@@ -427,7 +427,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
       if (pendingTaskUpdates.size > 0) {
         scheduleBroadcastFlush();
       }
-      prevTaskCompletions = { ...newVal.taskCompletions };
+      prevTaskCompletions = structuredClone(newVal.taskCompletions);
     },
     { deep: true }
   );

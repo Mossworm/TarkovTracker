@@ -67,7 +67,7 @@ function resolveLogSinkUrl(): string {
     const runtimeConfig = useRuntimeConfig();
     const runtimeSink = runtimeConfig?.logSinkUrl;
     if (typeof runtimeSink === 'string' && runtimeSink.trim().length > 0) {
-      cachedLogSinkUrl = runtimeSink.trim();
+      cachedLogSinkUrl = normalizeFetchTargetUrl(runtimeSink.trim());
       return cachedLogSinkUrl;
     }
   } catch {
@@ -75,8 +75,17 @@ function resolveLogSinkUrl(): string {
     return cachedLogSinkUrl;
   }
   const envSink = process.env.LOG_SINK_URL;
-  cachedLogSinkUrl = typeof envSink === 'string' ? envSink.trim() : '';
+  cachedLogSinkUrl = typeof envSink === 'string' ? normalizeFetchTargetUrl(envSink.trim()) : '';
   return cachedLogSinkUrl;
+}
+function normalizeFetchTargetUrl(value: string): string {
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
 }
 function sendServerLog(level: LogLevel, source: string, args: unknown[]): void {
   const sinkUrl = resolveLogSinkUrl();

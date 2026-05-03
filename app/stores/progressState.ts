@@ -79,7 +79,7 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
     legacyData &&
     typeof legacyData === 'object' &&
     'currentGameMode' in legacyData &&
-    !('pvp' in legacyData && !('pve' in legacyData))
+    (!('pvp' in legacyData) || !('pve' in legacyData))
   ) {
     const data = legacyData as Record<string, unknown>;
     return {

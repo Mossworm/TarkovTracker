@@ -14,6 +14,7 @@ import {
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { computeInvalidProgress } from '@/utils/progressInvalidation';
+import { createDefaultOwnedProgressData } from '@/utils/progressSanitizers';
 import {
   getCompletionFlags,
   getTaskStatusFromFlags,
@@ -26,10 +27,11 @@ import type { UserProgressData, UserState } from '@/stores/progressState';
 import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
 import type { Store } from 'pinia';
 function getGameModeData(store: Store<string, UserState> | undefined): UserProgressData {
-  if (!store) return {} as UserProgressData;
-  const currentGameMode = store.$state.currentGameMode || GAME_MODES.PVP;
-  const gameModeState = store.$state[currentGameMode as keyof UserState];
-  return (gameModeState || store.$state) as UserProgressData;
+  if (!store) return createDefaultOwnedProgressData();
+  const currentGameMode = store.$state.currentGameMode;
+  if (currentGameMode === GAME_MODES.PVP) return store.$state.pvp;
+  if (currentGameMode === GAME_MODES.PVE) return store.$state.pve;
+  return createDefaultOwnedProgressData();
 }
 type TeamStoresMap = Record<string, Store<string, UserState>>;
 type CompletionsMap = Record<string, Record<string, boolean>>;
@@ -136,7 +138,7 @@ export const useProgressStore = defineStore('progress', () => {
       const store = visibleTeamStores.value[teamId];
       for (const trader of metadataStore.traders) {
         const currentData = getGameModeData(store);
-        levels[teamId]![trader.id] = currentData?.level ?? 0;
+        levels[teamId]![trader.id] = currentData.traders?.[trader.id]?.level ?? 0;
       }
     }
     perfEnd(perfTimer, { traders: metadataStore.traders.length });
