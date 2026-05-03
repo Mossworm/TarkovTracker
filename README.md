@@ -43,6 +43,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
 
 # Optional: App configuration
 # NUXT_PUBLIC_APP_URL=http://localhost:3000
+# NUXT_TARKOV_JSON_BASE_URL=https://json.tarkov.dev
 # NUXT_PUBLIC_ALLOW_DIRECT_TOKEN_CREATE_FALLBACK=false
 # NUXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 # NUXT_PUBLIC_CLARITY_PROJECT_ID=xxxxxxxxxx

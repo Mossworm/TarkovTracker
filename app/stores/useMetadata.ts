@@ -1588,11 +1588,13 @@ export const useMetadataStore = defineStore('metadata', {
      * Fetch prestige data (language-specific, not game-mode specific)
      */
     async fetchPrestigeData(forceRefresh = false) {
+      const requestLanguage = this.languageCode;
       await this.fetchWithCache<TarkovPrestigeQueryResult>({
         cacheType: 'prestige' as CacheType,
         cacheKey: `all-${PRESTIGE_CACHE_VERSION}`,
+        cacheLanguage: requestLanguage,
         endpoint: '/api/tarkov/prestige',
-        queryParams: { lang: this.languageCode },
+        queryParams: { lang: requestLanguage },
         cacheTTL: CACHE_CONFIG.MAX_TTL,
         loadingKey: 'prestigeLoading',
         errorKey: 'prestigeError',
@@ -1605,6 +1607,7 @@ export const useMetadataStore = defineStore('metadata', {
         logName: 'Prestige',
         forceRefresh,
         promiseKey: 'prestigePromise',
+        promiseRequestKey: requestLanguage,
       });
     },
     /**

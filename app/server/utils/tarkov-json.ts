@@ -64,6 +64,10 @@ type JsonPathResult = {
   parentProperty?: string | number;
   value?: unknown;
 };
+type TranslationLookupResult = {
+  source: 'fallback' | 'primary';
+  value: string;
+};
 type JsonItemsPayload = {
   items?: unknown;
   itemCategories?: unknown;
@@ -128,6 +132,9 @@ function validateEnvelope<T>(payload: unknown, path: string): TarkovJsonEnvelope
   if (!isRecord(payload) || !Object.prototype.hasOwnProperty.call(payload, 'data')) {
     throw new Error(`Invalid json.tarkov.dev response for ${path}: missing data`);
   }
+  if (payload.data === null || payload.data === undefined) {
+    throw new Error(`Invalid json.tarkov.dev response for ${path}: missing data`);
+  }
   const translations = payload.translations;
   if (translations !== undefined && !Array.isArray(translations)) {
     throw new Error(`Invalid json.tarkov.dev response for ${path}: translations is not an array`);
@@ -169,12 +176,45 @@ async function fetchEnvelope<T>(
   const timeoutMs = Number.isFinite(options.timeoutMs)
     ? Math.max(1000, Math.floor(options.timeoutMs ?? DEFAULT_TIMEOUT_MS))
     : DEFAULT_TIMEOUT_MS;
-  let lastError: Error | null = null;
   const url = `${resolveBaseUrl(options)}/${path}`;
+  const cacheKey = `${url}|${timeoutMs}|${maxRetries}`;
+  const existing = inFlightEnvelopeFetches.get(cacheKey);
+  if (existing) {
+    return validateEnvelope<T>(await existing, path);
+  }
+  const fetchPromise = fetchEnvelopePayload(url, path, {
+    fetcher,
+    fetcherLogger,
+    maxRetries,
+    sleep,
+    timeoutMs,
+  });
+  inFlightEnvelopeFetches.set(cacheKey, fetchPromise);
+  try {
+    return validateEnvelope<T>(await fetchPromise, path);
+  } finally {
+    if (inFlightEnvelopeFetches.get(cacheKey) === fetchPromise) {
+      inFlightEnvelopeFetches.delete(cacheKey);
+    }
+  }
+}
+const inFlightEnvelopeFetches = new Map<string, Promise<unknown>>();
+async function fetchEnvelopePayload(
+  url: string,
+  path: string,
+  options: {
+    fetcher: TarkovJsonFetcherRequest;
+    fetcherLogger: Pick<typeof logger, 'error' | 'warn'>;
+    maxRetries: number;
+    sleep: (ms: number) => Promise<void>;
+    timeoutMs: number;
+  }
+): Promise<unknown> {
+  const { fetcher, fetcherLogger, maxRetries, sleep, timeoutMs } = options;
+  let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    let payload: unknown;
     try {
-      payload = await fetcher<unknown>(url, {
+      return await fetcher<unknown>(url, {
         headers: { Accept: 'application/json' },
         timeout: timeoutMs,
         retry: 0,
@@ -197,9 +237,29 @@ async function fetchEnvelope<T>(
       }
       continue;
     }
-    return validateEnvelope<T>(payload, path);
   }
   throw lastError || new Error(`Failed to fetch ${path}`);
+}
+const UNSAFE_TRANSLATION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+function readTranslation(
+  translations: JsonRecord | undefined,
+  fallbackTranslations: JsonRecord | undefined,
+  translationKey: string
+): TranslationLookupResult | undefined {
+  if (UNSAFE_TRANSLATION_KEYS.has(translationKey)) return undefined;
+  if (translations && Object.prototype.hasOwnProperty.call(translations, translationKey)) {
+    const value = translations[translationKey];
+    return typeof value === 'string' ? { source: 'primary', value } : undefined;
+  }
+  if (
+    fallbackTranslations &&
+    fallbackTranslations !== translations &&
+    Object.prototype.hasOwnProperty.call(fallbackTranslations, translationKey)
+  ) {
+    const value = fallbackTranslations[translationKey];
+    return typeof value === 'string' ? { source: 'fallback', value } : undefined;
+  }
+  return undefined;
 }
 function applyTranslations<T>(
   response: TarkovJsonEnvelope<T>,
@@ -207,7 +267,7 @@ function applyTranslations<T>(
   fallbackTranslations?: JsonRecord
 ): T {
   const translations = primaryTranslations ?? fallbackTranslations;
-  if (!translations) return response.data;
+  if (!translations || !response.translations?.length) return response.data;
   const translatedResponse = structuredClone(response) as TarkovJsonEnvelope<T>;
   for (const path of response.translations ?? []) {
     try {
@@ -221,10 +281,12 @@ function applyTranslations<T>(
           if (parentProperty === undefined) return;
           const translationKey = result.value;
           if (typeof translationKey !== 'string') return;
-          result.parent[parentProperty] =
-            translations[translationKey] ??
-            fallbackTranslations?.[translationKey] ??
-            translationKey;
+          const translated = readTranslation(translations, fallbackTranslations, translationKey);
+          if (!translated) return;
+          if (translated.source === 'fallback') {
+            logger.debug('[TarkovJson] Applied fallback translation', { path, translationKey });
+          }
+          result.parent[parentProperty] = translated.value;
         },
       });
     } catch (error) {
@@ -242,6 +304,9 @@ export async function fetchTarkovJsonEndpoint<T>(
 ): Promise<T> {
   const lang = options.lang?.trim() || ENGLISH_LANGUAGE;
   const baseResponse = await fetchEnvelope<T>(buildPath(endpoint, options), options);
+  if (!baseResponse.translations?.length) {
+    return baseResponse.data;
+  }
   const [primaryResponse, fallbackResponse] = await Promise.allSettled([
     fetchEnvelope<JsonRecord>(buildPath(endpoint, options, lang), options),
     lang === ENGLISH_LANGUAGE

@@ -424,6 +424,7 @@ Node.js version: 24.x
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key                                                           | Yes (prod)² |
 | `SB_SERVICE_ROLE_KEY`       | Service role key alias                                                     | Yes (prod)² |
 | `NUXT_PUBLIC_APP_URL`       | Application URL                                                            | Yes (prod)² |
+| `NUXT_TARKOV_JSON_BASE_URL` | Static game-data JSON base URL override                                    | No          |
 | `API_ALLOWED_HOSTS`         | Allowed origin hosts                                                       | No          |
 | `API_TRUST_PROXY`           | Override proxy trust auto-detection (`true` to trust forwarded IP headers) | No          |
 

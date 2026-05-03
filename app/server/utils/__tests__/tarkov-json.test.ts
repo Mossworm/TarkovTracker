@@ -144,6 +144,57 @@ describe('fetchTarkovJsonEndpoint', () => {
     );
     expect(result.maps.map1?.name).toBe('map.name');
   });
+  it('ignores unsafe and non-string translation values', async () => {
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/items': {
+        data: {
+          items: {
+            item1: { id: 'item1', name: '__proto__', shortName: 'item.short' },
+            item2: { id: 'item2', name: 'item.name' },
+          },
+        },
+        translations: ['$.data.items.*.name', '$.data.items.*.shortName'],
+      },
+      'https://json.tarkov.dev/regular/items_en': {
+        data: { 'item.name': { nested: true }, 'item.short': 'Short' },
+      },
+    });
+    const result = await fetchTarkovJsonEndpoint<{
+      items: Record<string, { name: string; shortName?: string }>;
+    }>('items', {
+      deps: { fetcher },
+      lang: 'en',
+    });
+    expect(result.items.item1?.name).toBe('__proto__');
+    expect(result.items.item1?.shortName).toBe('Short');
+    expect(result.items.item2?.name).toBe('item.name');
+  });
+  it('does not fetch translation files when the base response has no translation paths', async () => {
+    const payload = { items: {} };
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/items': { data: payload, translations: [] },
+    });
+    const result = await fetchTarkovJsonEndpoint('items', {
+      deps: { fetcher },
+      lang: 'de',
+    });
+    expect(result).toBe(payload);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('dedupes simultaneous upstream envelope fetches by URL', async () => {
+    let resolveFetch: (value: unknown) => void = () => undefined;
+    const fetcher = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+    ) as unknown as TestJsonFetcher;
+    const first = fetchTarkovJsonEndpoint('items', { deps: { fetcher }, lang: 'en' });
+    const second = fetchTarkovJsonEndpoint('items', { deps: { fetcher }, lang: 'en' });
+    resolveFetch({ data: { items: {} }, translations: [] });
+    await expect(Promise.all([first, second])).resolves.toEqual([{ items: {} }, { items: {} }]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('retries transient failures', async () => {
     let baseAttempts = 0;
     const fetcher = vi.fn(async (url: string) => {
@@ -151,9 +202,6 @@ describe('fetchTarkovJsonEndpoint', () => {
         baseAttempts++;
         if (baseAttempts === 1) throw new Error('network');
         return { data: { items: {} }, translations: [] };
-      }
-      if (url === 'https://json.tarkov.dev/regular/items_en') {
-        return { data: {} };
       }
       throw new Error(`Unexpected URL: ${url}`);
     }) as unknown as TestJsonFetcher;
@@ -164,13 +212,28 @@ describe('fetchTarkovJsonEndpoint', () => {
       maxRetries: 2,
     });
     expect(result).toEqual({ items: {} });
-    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledTimes(1);
   });
   it('throws for malformed envelopes', async () => {
     const fetcher = createFetcher({
       'https://json.tarkov.dev/regular/items': { nope: true },
       'https://json.tarkov.dev/regular/items_en': { data: {} },
+    });
+    const sleep = vi.fn(async () => undefined);
+    await expect(
+      fetchTarkovJsonEndpoint('items', {
+        deps: { fetcher, logger: { error: vi.fn(), warn: vi.fn() }, sleep },
+        lang: 'en',
+        maxRetries: 3,
+      })
+    ).rejects.toThrow('missing data');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+  it('throws for null envelope data without retrying validation failures', async () => {
+    const fetcher = createFetcher({
+      'https://json.tarkov.dev/regular/items': { data: null },
     });
     const sleep = vi.fn(async () => undefined);
     await expect(
