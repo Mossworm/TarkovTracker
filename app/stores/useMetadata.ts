@@ -817,12 +817,12 @@ export const useMetadataStore = defineStore('metadata', {
           requestKeys[promiseKey] = undefined;
         }
         requestIds[promiseKey] = promiseRequestId;
-        const promise = this._doFetchWithCache<T>({ ...config, promiseRequestId });
-        promises[promiseKey] = promise;
+        const requestPromise = this._doFetchWithCache<T>({ ...config, promiseRequestId });
+        promises[promiseKey] = requestPromise;
         try {
-          await promise;
+          await requestPromise;
         } finally {
-          if (promises[promiseKey] === promise) {
+          if (requestIds[promiseKey] === promiseRequestId) {
             promises[promiseKey] = null;
             requestKeys[promiseKey] = undefined;
             requestIds[promiseKey] = undefined;
