@@ -60,14 +60,19 @@ export function useAppInitialization() {
   const resetTarkovState = (reason: string, previousUserId: string | null = null) => {
     resetTarkovStoreForSessionTransition(previousUserId, reason);
   };
-  const startSyncIfNeeded = async (expectedUserId?: string) => {
+  const startSyncIfNeeded = async (expectedUserId?: string, expectedToken?: number) => {
     const authenticatedUserId = getAuthenticatedUserId();
     if (expectedUserId && authenticatedUserId !== expectedUserId) return;
+    if (expectedToken !== undefined && expectedToken !== authChangeToken) return;
     if (!authenticatedUserId || syncStarted) return;
     syncStarted = true;
     try {
       await initializeTarkovSync();
       if (expectedUserId && getAuthenticatedUserId() !== expectedUserId) {
+        syncStarted = false;
+        return;
+      }
+      if (expectedToken !== undefined && expectedToken !== authChangeToken) {
         syncStarted = false;
       }
     } catch (error) {
@@ -112,7 +117,7 @@ export function useAppInitialization() {
         syncStarted = false;
         migrationAttempted = false;
       }
-      await startSyncIfNeeded(userId);
+      await startSyncIfNeeded(userId, token);
       if (token !== authChangeToken) return;
       await runMigrationIfNeeded(userId);
     },

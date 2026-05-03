@@ -89,11 +89,7 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
       currentGameMode: data.currentGameMode === GAME_MODES.PVE ? GAME_MODES.PVE : GAME_MODES.PVP,
       gameEdition: (data.gameEdition as number) || defaultState.gameEdition,
       tarkovUid: (data.tarkovUid as number | null) ?? null,
-      pvp: hasPvp
-        ? sanitizeOwnedProgressData(data.pvp)
-        : !hasPve
-          ? migratedLegacy
-          : structuredClone(defaultProgressData),
+      pvp: hasPvp ? sanitizeOwnedProgressData(data.pvp) : migratedLegacy,
       pve: hasPve ? sanitizeOwnedProgressData(data.pve) : structuredClone(defaultProgressData),
     };
   }

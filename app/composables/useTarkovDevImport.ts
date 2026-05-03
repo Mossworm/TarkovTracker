@@ -54,13 +54,16 @@ export function useTarkovDevImport(): UseTarkovDevImportReturn {
     return true;
   }
   async function parseFile(file: File): Promise<void> {
-    profileUrlRequestId++;
+    const requestId = ++profileUrlRequestId;
     importState.value = 'loading';
     previewData.value = null;
     importError.value = null;
     try {
-      applyProfilePayload(JSON.parse(await file.text()));
+      const text = await file.text();
+      if (requestId !== profileUrlRequestId) return;
+      applyProfilePayload(JSON.parse(text));
     } catch (e) {
+      if (requestId !== profileUrlRequestId) return;
       importState.value = 'error';
       importError.value = 'Failed to read or parse JSON file';
       logger.error('[TarkovDevImport] Parse error:', e);
