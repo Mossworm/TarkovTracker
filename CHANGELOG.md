@@ -1,3 +1,10 @@
+## [1.34.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.34.4...v1.34.5) (2026-05-03)
+
+
+### Bug Fixes
+
+* **app:** migrate storyline page from useHead to useSeoMeta ([e2da075](https://github.com/tarkovtracker-org/TarkovTracker/commit/e2da0754561b210c3993a41d718fe14339f21fc3))
+
 ## [1.34.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.34.3...v1.34.4) (2026-05-03)
 
 
