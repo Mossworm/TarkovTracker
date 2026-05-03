@@ -4,7 +4,13 @@ const PAGE_SETTINGS_DRAWER_STATE_KEYS = {
   tasks: 'taskSettingsDrawer:isOpen',
 } as const;
 type PageSettingsDrawerKey = keyof typeof PAGE_SETTINGS_DRAWER_STATE_KEYS;
-export function usePageSettingsDrawer(pageKey: PageSettingsDrawerKey) {
+type UsePageSettingsDrawerResult = {
+  isOpen: globalThis.Ref<boolean>;
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+};
+export function usePageSettingsDrawer(pageKey: PageSettingsDrawerKey): UsePageSettingsDrawerResult {
   const stateKey = PAGE_SETTINGS_DRAWER_STATE_KEYS[pageKey];
   const isOpen = useState<boolean>(stateKey, () => false);
   const route = useRoute();
