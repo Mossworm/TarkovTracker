@@ -54,28 +54,41 @@ export function useAppInitialization() {
   };
   let syncStarted = false;
   let migrationAttempted = false;
-  // resetTarkovState keeps the existing (reason, previousUserId) call signature while forwarding
-  // to resetTarkovStoreForSessionTransition(previousUserId, reason).
+  let authChangeToken = 0;
   const resetTarkovState = (reason: string, previousUserId: string | null = null) => {
     resetTarkovStoreForSessionTransition(previousUserId, reason);
   };
-  const startSyncIfNeeded = async () => {
+  const startSyncIfNeeded = async (expectedUserId?: string, expectedToken?: number) => {
     const authenticatedUserId = getAuthenticatedUserId();
+    if (expectedUserId && authenticatedUserId !== expectedUserId) return;
+    if (expectedToken !== undefined && expectedToken !== authChangeToken) return;
     if (!authenticatedUserId || syncStarted) return;
     syncStarted = true;
     try {
       await initializeTarkovSync();
+      if (expectedUserId && getAuthenticatedUserId() !== expectedUserId) {
+        syncStarted = false;
+        return;
+      }
+      if (expectedToken !== undefined && expectedToken !== authChangeToken) {
+        syncStarted = false;
+      }
     } catch (error) {
       syncStarted = false;
       logger.error('[useAppInitialization] Error initializing Supabase sync:', error);
       showLoadFailed();
     }
   };
-  const runMigrationIfNeeded = async () => {
-    if (!getAuthenticatedUserId() || migrationAttempted) return;
+  const runMigrationIfNeeded = async (expectedUserId?: string, expectedToken?: number) => {
+    const authenticatedUserId = getAuthenticatedUserId();
+    if (expectedUserId && authenticatedUserId !== expectedUserId) return;
+    if (expectedToken !== undefined && expectedToken !== authChangeToken) return;
+    if (!authenticatedUserId || migrationAttempted) return;
     try {
       const store = useTarkovStore();
       await store.migrateDataIfNeeded?.();
+      if (expectedUserId && getAuthenticatedUserId() !== expectedUserId) return;
+      if (expectedToken !== undefined && expectedToken !== authChangeToken) return;
       migrationAttempted = true;
     } catch (error) {
       migrationAttempted = false;
@@ -87,6 +100,7 @@ export function useAppInitialization() {
   watch(
     () => [$supabase.user.loggedIn, $supabase.user.id] as const,
     async ([loggedIn, userId], previous) => {
+      const token = ++authChangeToken;
       const [prevLoggedIn, prevUserId] = previous ?? [false, null];
       if (!loggedIn || !userId) {
         if (prevLoggedIn && prevUserId) {
@@ -103,8 +117,9 @@ export function useAppInitialization() {
         syncStarted = false;
         migrationAttempted = false;
       }
-      await startSyncIfNeeded();
-      await runMigrationIfNeeded();
+      await startSyncIfNeeded(userId, token);
+      if (token !== authChangeToken) return;
+      await runMigrationIfNeeded(userId, token);
     },
     { immediate: true }
   );

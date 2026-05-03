@@ -115,6 +115,7 @@ export default defineNuxtConfig({
     tarkovJsonBaseUrl:
       process.env.NUXT_TARKOV_JSON_BASE_URL || process.env.TARKOV_JSON_BASE_URL || '',
     logSinkUrl: process.env.NUXT_LOG_SINK_URL || process.env.LOG_SINK_URL || '',
+    publicCacheBypassEnabled: process.env.NUXT_PUBLIC_CACHE_BYPASS_ENABLED === 'true',
     teamMembersCacheTtlMs:
       Number(
         process.env.NUXT_TEAM_MEMBERS_CACHE_TTL_MS ||
