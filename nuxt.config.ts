@@ -176,6 +176,12 @@ export default defineNuxtConfig({
       adminWatchTimeoutMs: Number(process.env.ADMIN_WATCH_TIMEOUT_MS || '5000') || 5000,
       githubOwner: process.env.GITHUB_OWNER || 'tarkovtracker-org',
       githubRepo: process.env.GITHUB_REPO || 'TarkovTracker',
+      promotedTwitch: {
+        channel: process.env.NUXT_PUBLIC_PROMOTED_TWITCH_CHANNEL || 'glorious_e',
+        displayName: process.env.NUXT_PUBLIC_PROMOTED_TWITCH_DISPLAY_NAME || 'Glorious_E',
+        enabled: process.env.NUXT_PUBLIC_PROMOTED_TWITCH_ENABLED !== 'false',
+        endsAt: process.env.NUXT_PUBLIC_PROMOTED_TWITCH_ENDS_AT || '2026-05-04T13:30:00+00:00',
+      },
     },
   },
   devtools: {
