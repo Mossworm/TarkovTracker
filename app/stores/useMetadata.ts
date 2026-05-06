@@ -521,8 +521,7 @@ export const useMetadataStore = defineStore('metadata', {
       });
       const mergedMaps = Object.entries(mapGroups)
         .map(([mapKey, maps]) => {
-          const primaryMap =
-            maps.find((map) => map.name.toLowerCase() === 'ground zero') ?? maps[0];
+          const primaryMap = maps.find((map) => map.normalizedName === 'ground-zero') ?? maps[0];
           if (!primaryMap) return null;
           const staticData = state.staticMapData?.[mapKey];
           const mergedIds = maps.map((map) => map.id);
