@@ -393,6 +393,13 @@ const inferNewBeginningPrestigeLevel = (task: Task): number | null => {
   const parsed = Number.parseInt(idMatch[1], 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
+const deriveStaticMapKey = (mapName: string, normalizedName?: string): string => {
+  if (normalizedName) {
+    return MAP_NORMALIZED_NAME_MAPPING[normalizedName] ?? normalizedName.replace(/-/g, '');
+  }
+  const lower = mapName.toLowerCase();
+  return MAP_NAME_MAPPING[lower] ?? lower.replace(/[\s+-]/g, '');
+};
 export const useMetadataStore = defineStore('metadata', {
   state: (): MetadataState => ({
     initialized: false,
@@ -509,11 +516,7 @@ export const useMetadataStore = defineStore('metadata', {
       }
       const mapGroups: Record<string, TarkovMap[]> = {};
       state.maps.forEach((map) => {
-        const mapKey = map.normalizedName
-          ? (MAP_NORMALIZED_NAME_MAPPING[map.normalizedName] ??
-            map.normalizedName.replace(/-/g, ''))
-          : (MAP_NAME_MAPPING[map.name.toLowerCase()] ??
-            map.name.toLowerCase().replace(/\s+|\+/g, ''));
+        const mapKey = deriveStaticMapKey(map.name, map.normalizedName);
         if (!mapGroups[mapKey]) {
           mapGroups[mapKey] = [];
         }
@@ -549,15 +552,9 @@ export const useMetadataStore = defineStore('metadata', {
         })
         .filter((map): map is NonNullable<typeof map> => map !== null);
       // Sort maps by task progression order using the mapKey for lookup
-      return sortMapsByGameOrder(mergedMaps, (map) => {
-        if (map.normalizedName) {
-          return (
-            MAP_NORMALIZED_NAME_MAPPING[map.normalizedName] ?? map.normalizedName.replace(/-/g, '')
-          );
-        }
-        const lowerCaseName = map.name.toLowerCase();
-        return MAP_NAME_MAPPING[lowerCaseName] ?? lowerCaseName.replace(/\s+|\+/g, '');
-      });
+      return sortMapsByGameOrder(mergedMaps, (map) =>
+        deriveStaticMapKey(map.name, map.normalizedName)
+      );
     },
     // Computed properties for traders (sorted by in-game order)
     sortedTraders: (state): Trader[] => sortTradersByGameOrder(state.traders),
@@ -2415,11 +2412,7 @@ export const useMetadataStore = defineStore('metadata', {
       );
     },
     getStaticMapKey(mapName: string, normalizedName?: string): string {
-      if (normalizedName) {
-        return MAP_NORMALIZED_NAME_MAPPING[normalizedName] ?? normalizedName.replace(/-/g, '');
-      }
-      const lower = mapName.toLowerCase();
-      return MAP_NAME_MAPPING[lower] ?? lower.replace(/[\s+-]/g, '');
+      return deriveStaticMapKey(mapName, normalizedName);
     },
     hasMapSvg(mapId: string): boolean {
       const map = this.getMapById(mapId);
