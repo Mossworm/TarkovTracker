@@ -1,3 +1,10 @@
+## [1.35.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.35.2...v1.35.3) (2026-05-06)
+
+
+### Bug Fixes
+
+* **app:** use normalizedName for locale-independent map key derivation ([effdaf6](https://github.com/tarkovtracker-org/TarkovTracker/commit/effdaf68df3aae031d3e87be8216aff35274c92a))
+
 ## [1.35.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.35.1...v1.35.2) (2026-05-06)
 
 
