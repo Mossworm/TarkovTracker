@@ -2415,12 +2415,12 @@ export const useMetadataStore = defineStore('metadata', {
           map.normalizedName?.toLowerCase() === lowerCaseName
       );
     },
-    getStaticMapKey(mapNameOrNormalizedName: string): string {
-      if (MAP_NORMALIZED_NAME_MAPPING[mapNameOrNormalizedName]) {
-        return MAP_NORMALIZED_NAME_MAPPING[mapNameOrNormalizedName];
+    getStaticMapKey(mapName: string, normalizedName?: string): string {
+      if (normalizedName) {
+        return MAP_NORMALIZED_NAME_MAPPING[normalizedName] ?? normalizedName.replace(/-/g, '');
       }
-      const lower = mapNameOrNormalizedName.toLowerCase();
-      return MAP_NAME_MAPPING[lower] ?? lower.replace(/[\s+]/g, '').replace(/-/g, '');
+      const lower = mapName.toLowerCase();
+      return MAP_NAME_MAPPING[lower] ?? lower.replace(/[\s+-]/g, '');
     },
     hasMapSvg(mapId: string): boolean {
       const map = this.getMapById(mapId);
