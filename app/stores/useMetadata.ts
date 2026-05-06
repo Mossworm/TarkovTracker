@@ -10,6 +10,7 @@ import {
   GAME_MODES,
   LOCALE_TO_API_MAPPING,
   MAP_NAME_MAPPING,
+  MAP_NORMALIZED_NAME_MAPPING,
   sortMapsByGameOrder,
   sortTradersByGameOrder,
 } from '@/utils/constants';
@@ -508,8 +509,11 @@ export const useMetadataStore = defineStore('metadata', {
       }
       const mapGroups: Record<string, TarkovMap[]> = {};
       state.maps.forEach((map) => {
-        const lowerCaseName = map.name.toLowerCase();
-        const mapKey = MAP_NAME_MAPPING[lowerCaseName] || lowerCaseName.replace(/\s+|\+/g, '');
+        const mapKey = map.normalizedName
+          ? (MAP_NORMALIZED_NAME_MAPPING[map.normalizedName] ??
+            map.normalizedName.replace(/-/g, ''))
+          : (MAP_NAME_MAPPING[map.name.toLowerCase()] ??
+            map.name.toLowerCase().replace(/\s+|\+/g, ''));
         if (!mapGroups[mapKey]) {
           mapGroups[mapKey] = [];
         }
@@ -547,8 +551,13 @@ export const useMetadataStore = defineStore('metadata', {
         .filter((map): map is NonNullable<typeof map> => map !== null);
       // Sort maps by task progression order using the mapKey for lookup
       return sortMapsByGameOrder(mergedMaps, (map) => {
+        if (map.normalizedName) {
+          return (
+            MAP_NORMALIZED_NAME_MAPPING[map.normalizedName] ?? map.normalizedName.replace(/-/g, '')
+          );
+        }
         const lowerCaseName = map.name.toLowerCase();
-        return MAP_NAME_MAPPING[lowerCaseName] || lowerCaseName.replace(/\s+|\+/g, '');
+        return MAP_NAME_MAPPING[lowerCaseName] ?? lowerCaseName.replace(/\s+|\+/g, '');
       });
     },
     // Computed properties for traders (sorted by in-game order)
@@ -2406,9 +2415,12 @@ export const useMetadataStore = defineStore('metadata', {
           map.normalizedName?.toLowerCase() === lowerCaseName
       );
     },
-    getStaticMapKey(mapName: string): string {
-      const lowerCaseName = mapName.toLowerCase();
-      return MAP_NAME_MAPPING[lowerCaseName] || lowerCaseName.replace(/\s+|\+/g, '');
+    getStaticMapKey(mapNameOrNormalizedName: string): string {
+      if (MAP_NORMALIZED_NAME_MAPPING[mapNameOrNormalizedName]) {
+        return MAP_NORMALIZED_NAME_MAPPING[mapNameOrNormalizedName];
+      }
+      const lower = mapNameOrNormalizedName.toLowerCase();
+      return MAP_NAME_MAPPING[lower] ?? lower.replace(/[\s+]/g, '').replace(/-/g, '');
     },
     hasMapSvg(mapId: string): boolean {
       const map = this.getMapById(mapId);
