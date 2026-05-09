@@ -1,3 +1,10 @@
+# [1.37.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.36.0...v1.37.0) (2026-05-09)
+
+
+### Features
+
+* **ui:** enable promoted Twitch embed with live-only display ([1215c8b](https://github.com/tarkovtracker-org/TarkovTracker/commit/1215c8b06de6a7c2011aa6ffee39b598e09a3cc1))
+
 # [1.36.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.35.4...v1.36.0) (2026-05-08)
 
 
