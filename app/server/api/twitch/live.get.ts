@@ -1,12 +1,13 @@
 import { defineEventHandler, getQuery, setResponseHeaders } from 'h3';
+import { useRuntimeConfig } from '#imports';
 import { createLogger } from '@/server/utils/logger';
 const logger = createLogger('twitch-live');
 const TWITCH_GQL_URL = 'https://gql.twitch.tv/gql';
-const TWITCH_CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 const CACHE_TTL_MS = 60_000;
 const LIVE_HEADERS = { 'cache-control': 'public, max-age=30, s-maxage=60' };
 let cachedResult: { channel: string; isLive: boolean; checkedAt: number } | null = null;
 export default defineEventHandler(async (event) => {
+  const { twitchClientId } = useRuntimeConfig(event);
   const query = getQuery(event);
   const channel =
     (typeof query.channel === 'string' ? query.channel.trim().toLowerCase() : '') || '';
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event) => {
   try {
     const response = await fetch(TWITCH_GQL_URL, {
       method: 'POST',
-      headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Content-Type': 'application/json' },
+      headers: { 'Client-ID': twitchClientId as string, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         query: 'query($login:String!){user(login:$login){stream{id}}}',
         variables: { login: channel },
