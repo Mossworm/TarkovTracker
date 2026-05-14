@@ -1,3 +1,10 @@
+## [1.37.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.1...v1.37.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **ci:** lower homepage Lighthouse performance threshold to 0.35 ([#382](https://github.com/tarkovtracker-org/TarkovTracker/issues/382)) ([0b67053](https://github.com/tarkovtracker-org/TarkovTracker/commit/0b67053407b42ed29b23c10d17cb44708749ab47))
+
 ## [1.37.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.0...v1.37.1) (2026-05-09)
 
 
