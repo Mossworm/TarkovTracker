@@ -1,3 +1,10 @@
+## [1.37.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.2...v1.37.3) (2026-05-15)
+
+
+### Bug Fixes
+
+* **api:** harden POST /progress/task/{id} validation ([#360](https://github.com/tarkovtracker-org/TarkovTracker/issues/360)) ([a749f30](https://github.com/tarkovtracker-org/TarkovTracker/commit/a749f30c74eec96d17d7be05bf1de8cc78aea83e))
+
 ## [1.37.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.1...v1.37.2) (2026-05-14)
 
 
