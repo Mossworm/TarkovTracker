@@ -137,7 +137,7 @@
     </div>
     <div class="space-y-3">
       <div
-        class="scrollbar-none bg-surface-900 flex items-center gap-3 overflow-x-auto rounded-lg border border-white/12 px-3 py-3 shadow-sm [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:justify-center sm:overflow-x-visible sm:px-4"
+        class="bg-surface-900 scrollbar-none flex items-center gap-3 overflow-x-auto rounded-lg border border-white/12 px-3 py-3 shadow-sm [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:justify-center sm:overflow-x-visible sm:px-4"
       >
         <div class="flex shrink-0 items-center gap-1">
           <UButton
