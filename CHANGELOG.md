@@ -1,3 +1,10 @@
+# [1.39.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.38.0...v1.39.0) (2026-05-21)
+
+
+### Features
+
+* **ui:** replace filter checkboxes with toggles and descriptive labels ([#123](https://github.com/tarkovtracker-org/TarkovTracker/issues/123)) ([#373](https://github.com/tarkovtracker-org/TarkovTracker/issues/373)) ([03effcb](https://github.com/tarkovtracker-org/TarkovTracker/commit/03effcbcf2a4ec4a459a26e5f1b2d57df9461b75))
+
 # [1.38.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.4...v1.38.0) (2026-05-21)
 
 
