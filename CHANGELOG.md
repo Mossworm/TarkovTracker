@@ -1,3 +1,10 @@
+# [1.40.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.39.0...v1.40.0) (2026-05-21)
+
+
+### Features
+
+* **ui:** show task alternatives badge for quest choices (Closes [#189](https://github.com/tarkovtracker-org/TarkovTracker/issues/189), Closes [#188](https://github.com/tarkovtracker-org/TarkovTracker/issues/188)) ([#376](https://github.com/tarkovtracker-org/TarkovTracker/issues/376)) ([55b193f](https://github.com/tarkovtracker-org/TarkovTracker/commit/55b193fc1fc85c25fec388778540458450922d3f))
+
 # [1.39.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.38.0...v1.39.0) (2026-05-21)
 
 
