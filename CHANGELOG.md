@@ -1,3 +1,11 @@
+# [1.38.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.4...v1.38.0) (2026-05-21)
+
+
+### Features
+
+* **ui:** add PvP/PvE accent theming to app shell borders ([#372](https://github.com/tarkovtracker-org/TarkovTracker/issues/372)) ([2a77314](https://github.com/tarkovtracker-org/TarkovTracker/commit/2a773145fc2302684656b9ed96887772b42b10a8)), closes [#104](https://github.com/tarkovtracker-org/TarkovTracker/issues/104)
+* **ui:** add section headers to nav drawer for clearer grouping ([#108](https://github.com/tarkovtracker-org/TarkovTracker/issues/108)) ([#374](https://github.com/tarkovtracker-org/TarkovTracker/issues/374)) ([1eb0123](https://github.com/tarkovtracker-org/TarkovTracker/commit/1eb012365add4fc6b314af0e2dfe66a37b6b73c8))
+
 ## [1.37.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.37.3...v1.37.4) (2026-05-20)
 
 
