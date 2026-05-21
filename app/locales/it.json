@@ -629,73 +629,73 @@
         "legend": "Legenda",
         "flow_start": "Avvia (senza prereq.)",
         "flow_end": "Fine (nessun follow-up)",
-        "flow_direction": "Tasks flow top → bottom",
-        "keyboard_controls_title": "Keyboard controls",
-        "keyboard_pan": "Pan",
+        "flow_direction": "Flusso missioni alto → basso",
+        "keyboard_controls_title": "Controlli tastiera",
+        "keyboard_pan": "Sposta",
         "keyboard_zoom": "Zoom",
-        "keyboard_reset": "Reset view",
-        "alpha_notice": "Graph view is in alpha. Layout and features may change frequently as we improve it.",
-        "resize_handle": "Resize graph height"
+        "keyboard_reset": "Reset vista",
+        "alpha_notice": "Vista grafico in alfa. Layout e caratteristiche saranno soggette a cambiamenti.",
+        "resize_handle": "Ridimensiona altezza grafico"
       },
       "secondary_views": {
-        "all": "All",
+        "all": "Tutte",
         "available": "Disponibile",
         "completed": "Completato",
         "locked": "Bloccato",
         "failed": "Fallito"
       },
       "user_views": {
-        "all": "All",
-        "yourself": "Yourself"
+        "all": "Tutti",
+        "yourself": "Tu"
       },
       "search": {
-        "placeholder": "Search...",
-        "aria_label": "Search tasks",
-        "clear": "Clear search"
+        "placeholder": "Cerca...",
+        "aria_label": "Cerca missioni",
+        "clear": "Cancella ricerca"
       },
       "sort": {
-        "none": "Default order",
-        "impact": "Impact",
-        "alphabetical": "Alphabetical",
-        "level": "Level Required",
-        "trader": "Trader Order",
-        "teammates": "Available to Teammates",
-        "xp": "XP Reward",
-        "ascending": "Ascending",
-        "descending": "Descending",
-        "aria_label": "Sort tasks"
+        "none": "Ordine predefinito",
+        "impact": "Impatto",
+        "alphabetical": "Alfabetico",
+        "level": "Livello Necessario",
+        "trader": "Ordine Trader",
+        "teammates": "Disponibile ai compagni di squadra",
+        "xp": "Ricompensa XP",
+        "ascending": "Ascendente",
+        "descending": "Discendente",
+        "aria_label": "Ordina le missioni"
       },
       "filters": {
         "close": "Chiudi"
       },
       "api_update_log": {
-        "title": "Recent Sync History",
-        "subtitle": "Track when your progress was automatically synced from external sources.",
-        "empty": "No syncs recorded yet. Your progress will appear here when synced.",
-        "entry_count": "{count} tasks",
-        "no_task_details": "Progress synced successfully.",
-        "more_tasks": "+{count} more",
-        "unknown_time": "Unknown time",
-        "collapse": "Collapse sync history",
-        "expand": "Expand sync history"
+        "title": "Cronologia Sincronizzazione Recente",
+        "subtitle": "Traccia i progressi sincronizzati automaticamente da fonti esterne.",
+        "empty": "Nessuna sincronizzazione registrata. I tuoi progressi appariranno qui quando saranno sincronizzati.",
+        "entry_count": "{count} missioni",
+        "no_task_details": "Progresso sincronizzato con successo.",
+        "more_tasks": "+{count}",
+        "unknown_time": "Orario sconosciuto",
+        "collapse": "Comprimi cronologia",
+        "expand": "Espandi cronologia"
       },
       "settings": {
-        "title": "Task Settings",
+        "title": "Impostazioni missioni",
         "tabs": {
-          "filters": "Task Filters",
-          "appearance": "Appearance",
-          "filter_bar": "Filter Bar",
-          "advanced": "Advanced"
+          "filters": "Filtri missioni",
+          "appearance": "Aspetto",
+          "filter_bar": "Barra dei filtri",
+          "advanced": "Avanzate"
         },
         "filters": {
-          "hint": "Control which tasks appear.",
-          "regular_tasks": "Regular Tasks",
-          "kappa_required": "Kappa Required",
-          "lightkeeper_required": "Lightkeeper Required",
-          "team_shared_only": "Team Shared Only",
-          "has_required_keys": "Only Tasks with Keys",
-          "show_global_tasks": "Show Global Tasks on Map",
-          "impact_respects_filters": "Impact Respects Task Filters",
+          "hint": "Controlla quali missioni appaiono.",
+          "regular_tasks": "Missioni normali",
+          "kappa_required": "Missioni Kappa",
+          "lightkeeper_required": "Missioni Lightkeeper",
+          "team_shared_only": "Condivise dal team",
+          "has_required_keys": "Missioni con chiavi",
+          "show_global_tasks": "Missioni globali nelle mappe",
+          "impact_respects_filters": "Rispetta l'impatto dei filtri missione",
           "hide_completed_map_objectives": "Nascondi missioni complete per mappa"
         },
         "appearance": {
@@ -715,7 +715,7 @@
           "failed_filter": "Filtro Fallito"
         },
         "advanced": {
-          "manual_fail_actions": "Azioni Fallimento manuale",
+          "manual_fail_actions": "Marca manualmente le missioni fallite",
           "failed_tasks_label": "Missioni fallite",
           "repair_failed": "Ripara missioni fallite",
           "repair_failed_confirm": "Riparare le missioni fallite eliminando i flag \"fallita\" che non sono supportati dalle attuali condizioni?",
@@ -780,15 +780,15 @@
         "complete": "Segna come completato",
         "mark_complete": "Segna come completato",
         "uncomplete": "Segna come non completato",
-        "completed": "Completato",
-        "not_completed": "Non completato",
+        "completed": "Completate",
+        "not_completed": "Non completate",
         "of": "di",
         "item": "Oggetto",
-        "mark_failed": "Contrassegna come Fallita",
+        "mark_failed": "Fallita",
         "complete_button": "Completata",
-        "available_button": "Segna come Disponibile",
-        "uncomplete_button": "Segna come Non completata",
-        "reset_failed": "Reset fallito",
+        "available_button": "Disponibile",
+        "uncomplete_button": "Non completata",
+        "reset_failed": "Reset",
         "reset_item_counts": "Resetta conteggio oggetti",
         "reset_item_counts_disabled_complete": "Uncomplete this task to reset item counts",
         "reset_item_counts_disabled_failed": "Mark this task as available to reset item counts",
@@ -902,7 +902,7 @@
         "confirm_confirm": "Enable"
       },
       "primary_views": {
-        "all": "All",
+        "all": "Tutte",
         "locked": "Bloccato",
         "available": "Disponibile",
         "maxed": "Maxed"
@@ -941,13 +941,13 @@
       "meta_description": "View all items needed for your active quests and hideout upgrades. Filter by quest, craft, and find-in-raid requirements.",
       "loading": "Loading task and hideout data",
       "search_placeholder": "Search items, tasks, or hideout stations...",
-      "clear_search": "Clear search",
+      "clear_search": "Cancella ricerca",
       "items": "items",
       "empty": "No items match your search.",
       "error": "Unable to load needed items.",
       "retry": "Riprova",
       "filters": {
-        "all": "All",
+        "all": "Tutte",
         "label": "Filters",
         "sections": {
           "items": "ITEMS",
@@ -1322,7 +1322,7 @@
     "mode_pve": "PvE",
     "platform_obs": "OBS Studio / Streamlabs Desktop",
     "platform_xsplit": "XSplit / vMix",
-    "appearance_title": "Appearance",
+    "appearance_title": "Aspetto",
     "customize_options": "Customize overlay options",
     "reset_defaults": "Reset Defaults",
     "layout_label": "Layout",
@@ -1657,7 +1657,7 @@
       "description": "Migrate your local progress data to your cloud account. This happens automatically when you sign in."
     },
     "reset": {
-      "error_title": "Reset fallito"
+      "error_title": "Reset"
     },
     "reset_pvp": {
       "success_title": "PvP Data Reset",
@@ -1948,7 +1948,7 @@
     "expand": "Expand",
     "view": {
       "available": "Disponibile",
-      "all": "All",
+      "all": "Tutte",
       "maxed": "Maxed",
       "locked": "Bloccato"
     }
@@ -1985,7 +1985,7 @@
     "level_required": "Lvl {level}",
     "locked_before": "{count} before",
     "filters": {
-      "all": "All",
+      "all": "Tutte",
       "tasks": "Missioni",
       "hideout": "Hideout",
       "completed": "Completato"
