@@ -338,6 +338,9 @@
     "zoom_speed": "缩放速度",
     "pan_speed": "平移速度",
     "zone_opacity": "区域透明度",
+    "tooltip_density": "Tooltips",
+    "tooltip_density_default": "Default",
+    "tooltip_density_compact": "紧凑",
     "map_settings": "地图设置",
     "not_available_title": "地图不可用",
     "not_available_description": "\"{mapName}\"的互动地图尚不可用。我们正在等待兼容地图的制作。",
@@ -372,7 +375,8 @@
     "aria": {
       "zoom_speed": "缩放速度",
       "pan_speed": "平移速度",
-      "zone_opacity": "区域透明度"
+      "zone_opacity": "区域透明度",
+      "tooltip_density": "Tooltip density"
     },
     "tooltip": {
       "go_to": "前往目标",
@@ -605,6 +609,22 @@
       "route_unlock_trader": "Trader: {name}",
       "route_unlock_reward": "Reward: {name}"
     },
+    "kappa": {
+      "title": "Kappa & Lightkeeper Tracker",
+      "subtitle": "Track your progress toward the Kappa container and Lightkeeper quests.",
+      "tabs": {
+        "kappa": "Kappa保险箱",
+        "lightkeeper": "灯塔守护者任务"
+      },
+      "stats": {
+        "total": "Kappa保险箱任务",
+        "completed": "Kappa Done",
+        "lightkeeper_total": "Lightkeeper Tasks",
+        "lightkeeper_completed": "Lightkeeper Done"
+      },
+      "progress_label": "complete",
+      "all_complete": "All tasks complete! Well done, PMC."
+    },
     "tasks": {
       "title": "任务",
       "primary_views": {
@@ -709,10 +729,15 @@
         "filter_bar": {
           "hint": "显示或隐藏状态筛选",
           "all_filter": "全部筛选",
+          "all_filter_hint": "Display every task regardless of status.",
           "available_filter": "可用筛选",
+          "available_filter_hint": "Tasks you can start right now based on your level and prerequisites.",
           "locked_filter": "锁定筛选",
+          "locked_filter_hint": "Tasks blocked by level, trader rep, or prerequisite tasks.",
           "completed_filter": "已完成筛选",
-          "failed_filter": "失败筛选"
+          "completed_filter_hint": "Tasks you've already finished.",
+          "failed_filter": "失败筛选",
+          "failed_filter_hint": "Tasks that failed due to missed conditions."
         },
         "advanced": {
           "manual_fail_actions": "手动失败操作",
@@ -867,6 +892,8 @@
         "kappa_required": "KAPPA 必需",
         "level_badge_tooltip": "需要玩家最低等级 {level} 才能解锁该任务",
         "lightkeeper_tooltip": "该任务是解锁商人 Lightkeeper 的必需任务",
+        "alternatives_tooltip": "This quest has {count} alternative choice(s) — you only need to complete one",
+        "alternatives_badge": "{count} alt",
         "lightkeeper_required": "LIGHTKEEPER 必需",
         "location_tooltip": "任务目标位于 {map}",
         "next_tasks": "后续任务：",
@@ -1291,6 +1318,7 @@
     "credits": "鸣谢",
     "settings": "设置",
     "profile": "个人资料",
+    "kappa": "Kappa & Lightkeeper",
     "section_navigation": "导航",
     "section_game_settings": "游戏设置",
     "section_external": "外部链接",
@@ -1495,6 +1523,11 @@
     },
     "account": {
       "begin_deletion": "开始删除账户"
+    },
+    "debug_state": {
+      "title": "Debug State",
+      "description": "Capture a JSON snapshot of your current tracker state for bug reports. Includes game mode, level, task completion states, and prerequisite chains.",
+      "copy_button": "Copy Debug State"
     },
     "general": {
       "privacy_mode": "主播模式",

@@ -338,6 +338,9 @@
     "zoom_speed": "Velocidad de zoom",
     "pan_speed": "Velocidad de desplazamiento",
     "zone_opacity": "Opacidad de zona",
+    "tooltip_density": "Tooltips",
+    "tooltip_density_default": "Default",
+    "tooltip_density_compact": "Compacta",
     "map_settings": "Ajustes del mapa",
     "not_available_title": "Mapa no disponible",
     "not_available_description": "El mapa interactivo de {mapName} aún no está disponible. Estamos esperando a que se cree un mapa compatible.",
@@ -372,7 +375,8 @@
     "aria": {
       "zoom_speed": "Velocidad de zoom",
       "pan_speed": "Velocidad de desplazamiento",
-      "zone_opacity": "Opacidad de zona"
+      "zone_opacity": "Opacidad de zona",
+      "tooltip_density": "Tooltip density"
     },
     "tooltip": {
       "go_to": "Ir al objetivo",
@@ -605,6 +609,22 @@
       "route_unlock_trader": "Trader: {name}",
       "route_unlock_reward": "Reward: {name}"
     },
+    "kappa": {
+      "title": "Kappa & Lightkeeper Tracker",
+      "subtitle": "Track your progress toward the Kappa container and Lightkeeper quests.",
+      "tabs": {
+        "kappa": "Kappa",
+        "lightkeeper": "Guardafaro"
+      },
+      "stats": {
+        "total": "Misiones Kappa",
+        "completed": "Kappa Done",
+        "lightkeeper_total": "Lightkeeper Tasks",
+        "lightkeeper_completed": "Lightkeeper Done"
+      },
+      "progress_label": "complete",
+      "all_complete": "All tasks complete! Well done, PMC."
+    },
     "tasks": {
       "title": "Misiones",
       "primary_views": {
@@ -709,10 +729,15 @@
         "filter_bar": {
           "hint": "Mostrar u ocultar filtros de estado.",
           "all_filter": "Todos los filtros",
+          "all_filter_hint": "Display every task regardless of status.",
           "available_filter": "Filtro disponible",
+          "available_filter_hint": "Tasks you can start right now based on your level and prerequisites.",
           "locked_filter": "Filtro bloqueado",
+          "locked_filter_hint": "Tasks blocked by level, trader rep, or prerequisite tasks.",
           "completed_filter": "Filtro completado",
-          "failed_filter": "Filtro fallido"
+          "completed_filter_hint": "Tasks you've already finished.",
+          "failed_filter": "Filtro fallido",
+          "failed_filter_hint": "Tasks that failed due to missed conditions."
         },
         "advanced": {
           "manual_fail_actions": "Acciones manuales de error",
@@ -867,6 +892,8 @@
         "kappa_required": "KAPPA REQUERIDA",
         "level_badge_tooltip": "Nivel mínimo de jugador {level} requerido para desbloquear esta misión",
         "lightkeeper_tooltip": "Esta misión es necesaria para desbloquear al comerciante Lightkeeper",
+        "alternatives_tooltip": "This quest has {count} alternative choice(s) — you only need to complete one",
+        "alternatives_badge": "{count} alt",
         "lightkeeper_required": "LIGHTKEEPER REQUERIDO",
         "location_tooltip": "Los objetivos de la misión están en {map}",
         "next_tasks": "Siguiente(s) misión(es):",
@@ -1291,6 +1318,7 @@
     "credits": "Créditos",
     "settings": "Configuración",
     "profile": "Perfil",
+    "kappa": "Kappa & Lightkeeper",
     "section_navigation": "Navegación",
     "section_game_settings": "Configuración del juego",
     "section_external": "Externo",
@@ -1495,6 +1523,11 @@
     },
     "account": {
       "begin_deletion": "Iniciar eliminación de cuenta"
+    },
+    "debug_state": {
+      "title": "Debug State",
+      "description": "Capture a JSON snapshot of your current tracker state for bug reports. Includes game mode, level, task completion states, and prerequisite chains.",
+      "copy_button": "Copy Debug State"
     },
     "general": {
       "privacy_mode": "Modo streamer",
