@@ -1,3 +1,13 @@
+# [1.41.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.40.0...v1.41.0) (2026-05-24)
+
+
+### Features
+
+* **ui:** add compact tooltip density toggle for map objectives ([#369](https://github.com/tarkovtracker-org/TarkovTracker/issues/369)) ([eb32530](https://github.com/tarkovtracker-org/TarkovTracker/commit/eb32530b82916a9b825cae02263e41bfad69cf0c)), closes [#122](https://github.com/tarkovtracker-org/TarkovTracker/issues/122)
+* add debug state export for bug reports ([#243](https://github.com/tarkovtracker-org/TarkovTracker/issues/243)) ([#371](https://github.com/tarkovtracker-org/TarkovTracker/issues/371)) ([95822be](https://github.com/tarkovtracker-org/TarkovTracker/commit/95822be3b78c83fd50d29f8cca3c443062b92262))
+* **ui:** add Kappa and Lightkeeper quest overview tracker (Closes [#89](https://github.com/tarkovtracker-org/TarkovTracker/issues/89)) ([#375](https://github.com/tarkovtracker-org/TarkovTracker/issues/375)) ([b688e15](https://github.com/tarkovtracker-org/TarkovTracker/commit/b688e153eafdac82d0ca582941c99d1684750ca9))
+* **ui:** needed items UI facelift — rarity borders, compact badges, improved spacing ([#370](https://github.com/tarkovtracker-org/TarkovTracker/issues/370)) ([0a5dff6](https://github.com/tarkovtracker-org/TarkovTracker/commit/0a5dff66bc56546b6d4eb34bce771fa33eeac8ad)), closes [#107](https://github.com/tarkovtracker-org/TarkovTracker/issues/107) [#372](https://github.com/tarkovtracker-org/TarkovTracker/issues/372)
+
 # [1.40.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.39.0...v1.40.0) (2026-05-21)
 
 
