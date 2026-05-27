@@ -1,3 +1,10 @@
+# [1.42.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.41.0...v1.42.0) (2026-05-27)
+
+
+### Features
+
+* automated supporter system with Stripe Checkout + Discord roles ([#346](https://github.com/tarkovtracker-org/TarkovTracker/issues/346)) ([f02c6b4](https://github.com/tarkovtracker-org/TarkovTracker/commit/f02c6b460aaf6c16a46bd4c3fc23f7459ce1eec4))
+
 # [1.41.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.40.0...v1.41.0) (2026-05-24)
 
 
