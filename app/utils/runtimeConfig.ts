@@ -27,33 +27,33 @@ const normalizePublicAppUrl = (value: string): string => {
 export const resolveSupabaseRuntimeConfig = (env: NodeJS.ProcessEnv) => {
   return {
     privateAnonKey: resolveEnvValue(
-      env.NUXT_SUPABASE_ANON_KEY,
       env.NUXT_PUBLIC_SUPABASE_ANON_KEY,
       env.SUPABASE_ANON_KEY,
+      // deprecated — remove after 2026-07-31
       env.VITE_SUPABASE_ANON_KEY
     ),
     privateUrl: resolveEnvValue(
-      env.NUXT_SUPABASE_URL,
       env.NUXT_PUBLIC_SUPABASE_URL,
       env.SUPABASE_URL,
+      // deprecated — remove after 2026-07-31
       env.VITE_SUPABASE_URL
     ),
     publicAnonKey: resolveEnvValue(
       env.NUXT_PUBLIC_SUPABASE_ANON_KEY,
-      env.NUXT_SUPABASE_ANON_KEY,
       env.SUPABASE_ANON_KEY,
+      // deprecated — remove after 2026-07-31
       env.VITE_SUPABASE_ANON_KEY
     ),
     publicUrl: resolveEnvValue(
       env.NUXT_PUBLIC_SUPABASE_URL,
-      env.NUXT_SUPABASE_URL,
       env.SUPABASE_URL,
+      // deprecated — remove after 2026-07-31
       env.VITE_SUPABASE_URL
     ),
   };
 };
 export const resolvePublicAppUrl = (env: NodeJS.ProcessEnv): string => {
-  const configuredUrl = resolveEnvValue(env.NUXT_PUBLIC_APP_URL, env.CF_PAGES_URL);
+  const configuredUrl = resolveEnvValue(env.NUXT_PUBLIC_APP_URL, env.APP_URL, env.CF_PAGES_URL);
   if (!configuredUrl) {
     return 'http://localhost:3000';
   }

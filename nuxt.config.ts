@@ -25,35 +25,38 @@ const CONFIGURED_NITRO_PRESET = process.env.NITRO_PRESET;
 const NITRO_PRESET = resolveNitroPreset(CONFIGURED_NITRO_PRESET);
 const PUBLIC_APP_URL = resolvePublicAppUrl(process.env);
 const IS_PRODUCTION_BUILD = process.env.NODE_ENV === 'production';
-const GOOGLE_ANALYTICS_MEASUREMENT_ID =
-  process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID ||
-  process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID ||
-  '';
-const MICROSOFT_CLARITY_PROJECT_ID =
-  process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID ||
-  process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID ||
-  '';
+const GOOGLE_ANALYTICS_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID || '';
+const MICROSOFT_CLARITY_PROJECT_ID = process.env.CLARITY_PROJECT_ID || '';
 const {
   privateAnonKey: PRIVATE_SUPABASE_ANON_KEY,
   privateUrl: PRIVATE_SUPABASE_URL,
   publicAnonKey: PUBLIC_SUPABASE_ANON_KEY,
   publicUrl: PUBLIC_SUPABASE_URL,
 } = resolveSupabaseRuntimeConfig(process.env);
-if (
-  process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID &&
-  process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID &&
-  process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID !==
-    process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID
-) {
-  console.warn('[Config] Conflicting GA measurement IDs - using NUXT_PUBLIC_GA_MEASUREMENT_ID');
-}
-if (
-  process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID &&
-  process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID &&
-  process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID !==
-    process.env.NUXT_PUBLIC_MICROSOFT_CLARITY_PROJECT_ID
-) {
-  console.warn('[Config] Conflicting Clarity project IDs - using NUXT_PUBLIC_CLARITY_PROJECT_ID');
+const STRIPE_PRICE_KEYS = [
+  'STRIPE_PRICE_SCAV_MONTHLY',
+  'STRIPE_PRICE_SCAV_6MONTH',
+  'STRIPE_PRICE_SCAV_YEARLY',
+  'STRIPE_PRICE_TIMMY_MONTHLY',
+  'STRIPE_PRICE_TIMMY_6MONTH',
+  'STRIPE_PRICE_TIMMY_YEARLY',
+  'STRIPE_PRICE_CHAD_MONTHLY',
+  'STRIPE_PRICE_CHAD_6MONTH',
+  'STRIPE_PRICE_CHAD_YEARLY',
+] as const;
+const IS_BUILD_COMMAND = process.argv.some((a) => a === 'build' || a === 'generate');
+const IS_CF_PREVIEW = process.env.CF_PAGES === '1' && process.env.CF_PAGES_BRANCH !== 'main';
+const IS_CI = process.env.CI === 'true';
+// Skip Stripe env validation in CI: GitHub Actions builds run with placeholder/test keys
+// and shouldn't fail the production build guard. Real production builds run on Cloudflare
+// Pages (CF_PAGES=1), where IS_CI is false and the keys must be present.
+if (IS_PRODUCTION_BUILD && IS_BUILD_COMMAND && !IS_CF_PREVIEW && !IS_CI) {
+  const missingKeys = ['STRIPE_SECRET_KEY', ...STRIPE_PRICE_KEYS].filter(
+    (key) => !process.env[key]?.trim()
+  );
+  if (missingKeys.length > 0) {
+    throw new Error(`[Config] Missing required Stripe env vars: ${missingKeys.join(', ')}`);
+  }
 }
 const cspRouteRules = buildContentSecurityPolicyRouteRules({
   clientLogSinkUrl: process.env.NUXT_PUBLIC_CLIENT_LOG_SINK_URL || '/api/logs/client',
@@ -95,50 +98,84 @@ export default defineNuxtConfig({
     supabaseUrl: PRIVATE_SUPABASE_URL,
     supabaseServiceKey:
       process.env.NUXT_SUPABASE_SERVICE_KEY ||
+      // deprecated — remove after 2026-07-31
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SB_SERVICE_ROLE_KEY ||
       '',
     supabaseAnonKey: PRIVATE_SUPABASE_ANON_KEY,
-    githubToken:
-      process.env.NUXT_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || '',
+    githubToken: process.env.GITHUB_TOKEN || '',
     githubContributorsExclude:
       process.env.NUXT_GITHUB_CONTRIBUTORS_EXCLUDE ||
+      // deprecated — remove after 2026-07-31
       process.env.GITHUB_CONTRIBUTORS_EXCLUDE ||
       'claude,claude[bot],semantic-release-bot,semantic-release[bot]',
     githubContributorsCacheTtlMs:
       Number(
         process.env.NUXT_GITHUB_CONTRIBUTORS_CACHE_TTL_MS ||
+          // deprecated — remove after 2026-07-31
           process.env.GITHUB_CONTRIBUTORS_CACHE_TTL_MS ||
           '1800000'
       ) || 1800000,
     githubTimeoutMs:
-      Number(process.env.NUXT_GITHUB_TIMEOUT_MS || process.env.GITHUB_TIMEOUT_MS || '8000') || 8000,
+      Number(
+        process.env.NUXT_GITHUB_TIMEOUT_MS ||
+          // deprecated — remove after 2026-07-31
+          process.env.GITHUB_TIMEOUT_MS ||
+          '8000'
+      ) || 8000,
     tarkovJsonBaseUrl:
-      process.env.NUXT_TARKOV_JSON_BASE_URL || process.env.TARKOV_JSON_BASE_URL || '',
-    logSinkUrl: process.env.NUXT_LOG_SINK_URL || process.env.LOG_SINK_URL || '',
-    twitchClientId: process.env.NUXT_TWITCH_CLIENT_ID || 'kimne78kx3ncx6brgo4mv6wki5h1ko',
-    publicCacheBypassEnabled: process.env.NUXT_PUBLIC_CACHE_BYPASS_ENABLED === 'true',
+      process.env.NUXT_TARKOV_JSON_BASE_URL ||
+      // deprecated — remove after 2026-07-31
+      process.env.TARKOV_JSON_BASE_URL ||
+      '',
+    logSinkUrl:
+      process.env.NUXT_LOG_SINK_URL ||
+      // deprecated — remove after 2026-07-31
+      process.env.LOG_SINK_URL ||
+      '',
+    twitchClientId:
+      process.env.NUXT_TWITCH_CLIENT_ID ||
+      // deprecated — remove after 2026-07-31
+      process.env.TWITCH_CLIENT_ID ||
+      'kimne78kx3ncx6brgo4mv6wki5h1ko',
+    publicCacheBypassEnabled:
+      process.env.NUXT_CACHE_BYPASS_ENABLED === 'true' ||
+      // deprecated — remove after 2026-07-31
+      process.env.NUXT_PUBLIC_CACHE_BYPASS_ENABLED === 'true',
     teamMembersCacheTtlMs:
       Number(
         process.env.NUXT_TEAM_MEMBERS_CACHE_TTL_MS ||
+          // deprecated — remove after 2026-07-31
           process.env.TEAM_MEMBERS_CACHE_TTL_MS ||
           '5000'
       ) || 5000,
     teamMembersRateLimitPerMinute:
       Number(
         process.env.NUXT_TEAM_MEMBERS_RATE_LIMIT_PER_MINUTE ||
+          // deprecated — remove after 2026-07-31
           process.env.TEAM_MEMBERS_RATE_LIMIT_PER_MINUTE ||
           '120'
       ) || 120,
+    stripeSecretKey: (process.env.STRIPE_SECRET_KEY ?? '').trim(),
+    stripePriceScavMonthly: (process.env.STRIPE_PRICE_SCAV_MONTHLY ?? '').trim(),
+    stripePriceScav6month: (process.env.STRIPE_PRICE_SCAV_6MONTH ?? '').trim(),
+    stripePriceScavYearly: (process.env.STRIPE_PRICE_SCAV_YEARLY ?? '').trim(),
+    stripePriceTimmyMonthly: (process.env.STRIPE_PRICE_TIMMY_MONTHLY ?? '').trim(),
+    stripePriceTimmy6month: (process.env.STRIPE_PRICE_TIMMY_6MONTH ?? '').trim(),
+    stripePriceTimmyYearly: (process.env.STRIPE_PRICE_TIMMY_YEARLY ?? '').trim(),
+    stripePriceChadMonthly: (process.env.STRIPE_PRICE_CHAD_MONTHLY ?? '').trim(),
+    stripePriceChad6month: (process.env.STRIPE_PRICE_CHAD_6MONTH ?? '').trim(),
+    stripePriceChadYearly: (process.env.STRIPE_PRICE_CHAD_YEARLY ?? '').trim(),
     sharedProfileCacheTtlMs:
       Number(
         process.env.NUXT_SHARED_PROFILE_CACHE_TTL_MS ||
+          // deprecated — remove after 2026-07-31
           process.env.SHARED_PROFILE_CACHE_TTL_MS ||
           '5000'
       ) || 5000,
     sharedProfileRateLimitPerMinute:
       Number(
         process.env.NUXT_SHARED_PROFILE_RATE_LIMIT_PER_MINUTE ||
+          // deprecated — remove after 2026-07-31
           process.env.SHARED_PROFILE_RATE_LIMIT_PER_MINUTE ||
           '120'
       ) || 120,
@@ -165,7 +202,11 @@ export default defineNuxtConfig({
     },
     public: {
       NODE_ENV: process.env.NODE_ENV || 'production',
-      VITE_LOG_LEVEL: process.env.NUXT_PUBLIC_LOG_LEVEL || process.env.VITE_LOG_LEVEL || '',
+      logLevel:
+        process.env.NUXT_PUBLIC_LOG_LEVEL ||
+        // deprecated — remove after 2026-07-31
+        process.env.VITE_LOG_LEVEL ||
+        '',
       appUrl: PUBLIC_APP_URL,
       appVersion,
       googleAnalyticsMeasurementId: IS_PRODUCTION_BUILD ? GOOGLE_ANALYTICS_MEASUREMENT_ID : '',
