@@ -1,3 +1,10 @@
+# [1.44.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.43.0...v1.44.0) (2026-05-28)
+
+
+### Features
+
+* **admin:** add supporter override with twitch embed fix ([#407](https://github.com/tarkovtracker-org/TarkovTracker/issues/407)) ([dd9187e](https://github.com/tarkovtracker-org/TarkovTracker/commit/dd9187e15e88ad176196c9ff4a03745d0cedd19e))
+
 # [1.43.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.42.0...v1.43.0) (2026-05-28)
 
 
