@@ -1,3 +1,10 @@
+# [1.43.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.42.0...v1.43.0) (2026-05-28)
+
+
+### Features
+
+* **ui:** supporter tier badge + subscriber management flow ([#405](https://github.com/tarkovtracker-org/TarkovTracker/issues/405)) ([4e98259](https://github.com/tarkovtracker-org/TarkovTracker/commit/4e98259175978d17385f94097d154a746acdd895))
+
 # [1.42.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.41.0...v1.42.0) (2026-05-27)
 
 
