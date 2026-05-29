@@ -1,3 +1,10 @@
+## [1.44.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.44.1...v1.44.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* **app:** tighten metadata skip-list path matching ([#410](https://github.com/tarkovtracker-org/TarkovTracker/issues/410)) ([218a412](https://github.com/tarkovtracker-org/TarkovTracker/commit/218a4122d32ae46c7248ecdf5664345fe4a75196))
+
 ## [1.44.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.44.0...v1.44.1) (2026-05-29)
 
 
