@@ -1,3 +1,10 @@
+## [1.44.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.44.0...v1.44.1) (2026-05-29)
+
+
+### Performance Improvements
+
+* **app:** fast-path translation engine with JSONPath fallback ([#408](https://github.com/tarkovtracker-org/TarkovTracker/issues/408)) ([88ade9c](https://github.com/tarkovtracker-org/TarkovTracker/commit/88ade9c609d3dad34f0d3185be0348161f8fe961))
+
 # [1.44.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.43.0...v1.44.0) (2026-05-28)
 
 
