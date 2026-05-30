@@ -1,139 +1,166 @@
 <template>
-  <div class="flex min-h-full flex-col px-3 py-6 sm:px-6">
-    <div class="mx-auto w-full max-w-[1400px]">
-      <!-- Header -->
-      <div class="mb-6">
-        <div class="flex items-center gap-3">
-          <span
-            class="bg-kappa/15 border-kappa/25 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
-          >
-            <UIcon name="i-mdi-trophy" class="text-kappa h-5 w-5" />
-          </span>
-          <div>
-            <h1 class="text-2xl font-bold text-white">
-              {{ t('page.kappa.title') }}
-            </h1>
-            <p class="text-surface-400 text-sm">
-              {{ t('page.kappa.subtitle') }}
-            </p>
-          </div>
-        </div>
-      </div>
-      <!-- Stats -->
-      <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-          <div class="text-surface-400 text-xs font-medium tracking-wide uppercase">
-            {{ t('page.kappa.stats.total') }}
-          </div>
-          <div class="mt-1 text-2xl font-bold text-white">
-            {{ kappaTasks.length }}
-          </div>
-        </div>
-        <div class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-          <div class="text-surface-400 text-xs font-medium tracking-wide uppercase">
-            {{ t('page.kappa.stats.completed') }}
-          </div>
-          <div class="text-success-400 mt-1 text-2xl font-bold">
-            {{ kappaCompleted }}
-          </div>
-        </div>
-        <div class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-          <div class="text-surface-400 text-xs font-medium tracking-wide uppercase">
-            {{ t('page.kappa.stats.lightkeeper_total') }}
-          </div>
-          <div class="mt-1 text-2xl font-bold text-white">
-            {{ lightkeeperTasks.length }}
-          </div>
-        </div>
-        <div class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-          <div class="text-surface-400 text-xs font-medium tracking-wide uppercase">
-            {{ t('page.kappa.stats.lightkeeper_completed') }}
-          </div>
-          <div class="text-lightkeeper mt-1 text-2xl font-bold">
-            {{ lightkeeperCompleted }}
-          </div>
-        </div>
-      </div>
-      <!-- Tab toggle -->
-      <div class="mb-4 flex gap-2">
-        <UButton
-          :variant="activeTab === 'kappa' ? 'solid' : 'outline'"
-          color="primary"
-          size="sm"
-          @click="activeTab = 'kappa'"
+  <div class="flex min-h-full flex-col px-3 py-6 sm:px-6 lg:px-10 2xl:px-16">
+    <div class="mb-4">
+      <div class="flex items-center gap-3">
+        <span
+          class="bg-kappa/15 border-kappa/25 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
         >
-          <UIcon name="i-mdi-trophy" class="mr-1.5 h-4 w-4" />
-          {{ t('page.kappa.tabs.kappa') }} ({{ kappaTasks.length }})
-        </UButton>
-        <UButton
-          :variant="activeTab === 'lightkeeper' ? 'solid' : 'outline'"
-          color="info"
-          size="sm"
-          @click="activeTab = 'lightkeeper'"
-        >
-          <UIcon name="i-mdi-lighthouse" class="mr-1.5 h-4 w-4" />
-          {{ t('page.kappa.tabs.lightkeeper') }} ({{ lightkeeperTasks.length }})
-        </UButton>
-      </div>
-      <!-- Progress bar -->
-      <div class="mb-6">
-        <div class="bg-surface-800 h-2 overflow-hidden rounded-full">
-          <div
-            class="h-full rounded-full transition-all duration-300"
-            :class="activeTab === 'kappa' ? 'bg-kappa' : 'bg-lightkeeper'"
-            :style="{ width: `${progressPercent}%` }"
-          />
+          <UIcon name="i-mdi-trophy" class="text-kappa h-5 w-5" />
+        </span>
+        <div>
+          <h1 class="text-2xl font-bold text-white">
+            {{ t('page.kappa.title') }}
+          </h1>
+          <p class="text-surface-400 text-sm">
+            {{ t('page.kappa.subtitle') }}
+          </p>
         </div>
-        <div class="text-surface-400 mt-1 text-right text-xs">
-          {{ progressPercent }}% {{ t('page.kappa.progress_label') }}
-        </div>
-      </div>
-      <!-- Task list -->
-      <div class="space-y-3">
-        <TaskCard
-          v-for="task in displayedTasks"
-          :key="task.id"
-          :task="task"
-          @on-task-action="handleTaskAction"
-        />
-      </div>
-      <div v-if="displayedTasks.length === 0" class="py-12 text-center">
-        <UIcon name="i-mdi-check-circle-outline" class="text-success-400 mx-auto mb-3 h-12 w-12" />
-        <p class="text-surface-300 text-lg font-medium">
-          {{ t('page.kappa.all_complete') }}
-        </p>
       </div>
     </div>
+    <UTabs
+      v-model="activeTabKey"
+      :items="tabItems"
+      :content="false"
+      color="neutral"
+      size="md"
+      class="mb-3 w-fit"
+      :ui="{
+        list: 'gap-0 rounded-lg border border-white/[0.08] bg-surface-900/60 p-0.5',
+        indicator: 'rounded-md bg-white/[0.08]',
+        trigger:
+          'relative px-4 py-2 text-sm font-medium transition-colors rounded-md data-[state=active]:text-white',
+      }"
+    >
+      <template #default="{ item }">
+        <div class="flex items-center gap-2">
+          <UIcon
+            :name="item.iconName"
+            class="h-4 w-4"
+            :class="item.value === 'kappa' ? 'text-kappa-400' : 'text-lightkeeper-400'"
+          />
+          <span>{{ item.label }}</span>
+          <span
+            class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums"
+            :class="
+              item.value === 'kappa'
+                ? 'bg-warning-500/20 text-warning-300'
+                : 'bg-info-500/20 text-info-300'
+            "
+          >
+            {{ item.count }}
+          </span>
+        </div>
+      </template>
+    </UTabs>
+    <TrackerSummary
+      :label="tabLabel"
+      :total="totals.total"
+      :completed="totals.completed"
+      :failed="totals.failed"
+      :available="totals.available"
+      :locked="totals.locked"
+      :accent="activeTab"
+      :collector="collectorRow"
+    />
+    <div v-if="totals.total === 0" class="py-12 text-center">
+      <UIcon name="i-mdi-cloud-off-outline" class="text-surface-500 mx-auto mb-3 h-12 w-12" />
+      <p class="text-surface-300 text-lg font-medium">
+        {{ t('page.kappa.empty', 'No tasks for this list yet.') }}
+      </p>
+    </div>
+    <template v-else>
+      <div
+        v-if="xxlAndUp"
+        class="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] items-start gap-3"
+      >
+        <KappaTraderColumn
+          v-for="group in groupedByTraderWithoutFence"
+          :key="group.trader.id"
+          :group="group"
+          :accent="activeTab"
+        />
+      </div>
+      <div
+        v-else-if="lgAndUp"
+        class="scrollbar-thin -mx-3 flex snap-x gap-3 overflow-x-auto px-3 pb-2 lg:-mx-10 lg:px-10"
+      >
+        <KappaTraderColumn
+          v-for="group in groupedByTraderWithoutFence"
+          :key="group.trader.id"
+          :group="group"
+          :accent="activeTab"
+          class="w-64 shrink-0 snap-start"
+        />
+      </div>
+      <template v-else>
+        <div
+          class="bg-military-background/95 sticky top-0 z-10 -mx-3 px-3 py-2 backdrop-blur-sm sm:-mx-6 sm:px-6"
+        >
+          <KappaTraderSelector
+            v-model="selectedTraderId"
+            :groups="groupedByTraderWithoutFence"
+            :accent="activeTab"
+          />
+        </div>
+        <KappaTraderColumn
+          v-if="selectedTraderGroup"
+          :group="selectedTraderGroup"
+          :accent="activeTab"
+        />
+      </template>
+    </template>
   </div>
 </template>
 <script setup lang="ts">
-  import TaskCard from '@/features/tasks/TaskCard.vue';
+  import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
+  import KappaTraderColumn from '@/features/kappa/KappaTraderColumn.vue';
+  import KappaTraderSelector from '@/features/kappa/KappaTraderSelector.vue';
+  import TrackerSummary from '@/features/kappa/TrackerSummary.vue';
+  import { useKappaOverview, type KappaTabKey } from '@/features/kappa/useKappaOverview';
   const { t } = useI18n({ useScope: 'global' });
-  const metadataStore = useMetadataStore();
-  const tarkovStore = useTarkovStore();
-  const activeTab = ref<'kappa' | 'lightkeeper'>('kappa');
-  const kappaTasks = computed(() => metadataStore.tasks.filter((task) => task.kappaRequired));
-  const lightkeeperTasks = computed(() =>
-    metadataStore.tasks.filter((task) => task.lightkeeperRequired)
+  const { lgAndUp, xxlAndUp } = useSharedBreakpoints();
+  const activeTab = ref<KappaTabKey>('kappa');
+  const selectedTraderId = ref<string>('');
+  const { totals: kappaTotals } = useKappaOverview(() => 'kappa');
+  const { totals: lightkeeperTotals } = useKappaOverview(() => 'lightkeeper');
+  const { totals, groupedByTraderWithoutFence, collectorRow } = useKappaOverview(
+    () => activeTab.value
   );
-  const displayedTasks = computed(() =>
-    activeTab.value === 'kappa' ? kappaTasks.value : lightkeeperTasks.value
+  watch(
+    groupedByTraderWithoutFence,
+    (groups) => {
+      if (groups.length > 0 && !groups.some((g) => g.trader.id === selectedTraderId.value)) {
+        selectedTraderId.value = groups[0]!.trader.id;
+      }
+    },
+    { immediate: true }
   );
-  const kappaCompleted = computed(
-    () => kappaTasks.value.filter((task) => tarkovStore.isTaskComplete(task.id)).length
+  const selectedTraderGroup = computed(() =>
+    groupedByTraderWithoutFence.value.find((g) => g.trader.id === selectedTraderId.value)
   );
-  const lightkeeperCompleted = computed(
-    () => lightkeeperTasks.value.filter((task) => tarkovStore.isTaskComplete(task.id)).length
+  const tabLabel = computed(() =>
+    activeTab.value === 'kappa' ? t('page.kappa.tabs.kappa') : t('page.kappa.tabs.lightkeeper')
   );
-  const progressPercent = computed(() => {
-    const tasks = activeTab.value === 'kappa' ? kappaTasks.value : lightkeeperTasks.value;
-    const completed =
-      activeTab.value === 'kappa' ? kappaCompleted.value : lightkeeperCompleted.value;
-    return tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+  const tabItems = computed(() => [
+    {
+      label: t('page.kappa.tabs.kappa'),
+      value: 'kappa' as KappaTabKey,
+      count: kappaTotals.value.total,
+      iconName: 'i-mdi-trophy',
+    },
+    {
+      label: t('page.kappa.tabs.lightkeeper'),
+      value: 'lightkeeper' as KappaTabKey,
+      count: lightkeeperTotals.value.total,
+      iconName: 'i-mdi-lighthouse',
+    },
+  ]);
+  const activeTabKey = computed({
+    get: () => activeTab.value,
+    set: (val: KappaTabKey) => {
+      activeTab.value = val;
+    },
   });
-  function handleTaskAction(_action: unknown) {
-    // Task actions handled by TaskCard internally
-  }
   useSeoMeta({
     title: () => t('page.kappa.title'),
     description: () => t('page.kappa.subtitle'),
