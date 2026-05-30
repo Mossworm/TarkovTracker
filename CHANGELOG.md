@@ -1,3 +1,10 @@
+# [1.45.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.44.2...v1.45.0) (2026-05-30)
+
+
+### Features
+
+* **ui:** rewrite /kappa as compact trader-grouped overview ([#411](https://github.com/tarkovtracker-org/TarkovTracker/issues/411)) ([01d4166](https://github.com/tarkovtracker-org/TarkovTracker/commit/01d41667a12167d98c4362d4949a03ffc2a6b150)), closes [#89](https://github.com/tarkovtracker-org/TarkovTracker/issues/89)
+
 ## [1.44.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.44.1...v1.44.2) (2026-05-29)
 
 
