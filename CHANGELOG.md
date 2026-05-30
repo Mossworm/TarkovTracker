@@ -1,3 +1,10 @@
+## [1.45.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.0...v1.45.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **deps:** patch moderate ip-address/brace-expansion/ws advisories ([#413](https://github.com/tarkovtracker-org/TarkovTracker/issues/413)) ([7358a03](https://github.com/tarkovtracker-org/TarkovTracker/commit/7358a03c201e134af2a5d22caa706fc6c6b6d32c))
+
 # [1.45.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.44.2...v1.45.0) (2026-05-30)
 
 
