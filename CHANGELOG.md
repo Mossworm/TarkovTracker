@@ -1,3 +1,10 @@
+## [1.45.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.2...v1.45.3) (2026-06-06)
+
+
+### Bug Fixes
+
+* **api:** stop clamping API sync timestamps to int32 (1970 in Sync History) ([#426](https://github.com/tarkovtracker-org/TarkovTracker/issues/426)) ([41fe3dd](https://github.com/tarkovtracker-org/TarkovTracker/commit/41fe3dd09371bc81126ca3129c359a629fd3c6a0)), closes [#425](https://github.com/tarkovtracker-org/TarkovTracker/issues/425)
+
 ## [1.45.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.1...v1.45.2) (2026-05-31)
 
 
