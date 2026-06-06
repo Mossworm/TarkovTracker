@@ -1,3 +1,10 @@
+## [1.45.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.3...v1.45.4) (2026-06-06)
+
+
+### Bug Fixes
+
+* **api:** make 1970 timestamp backfill timeout-safe ([#428](https://github.com/tarkovtracker-org/TarkovTracker/issues/428)) ([1a70bad](https://github.com/tarkovtracker-org/TarkovTracker/commit/1a70badd8dcd8c7a4caada0d95d6e08b546bbed7))
+
 ## [1.45.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.2...v1.45.3) (2026-06-06)
 
 
