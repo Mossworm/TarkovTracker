@@ -1,3 +1,10 @@
+# [1.46.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.5...v1.46.0) (2026-06-07)
+
+
+### Features
+
+* **ui:** consolidate dashboard trader sort + cleanup from stale branches ([#430](https://github.com/tarkovtracker-org/TarkovTracker/issues/430)) ([9e93624](https://github.com/tarkovtracker-org/TarkovTracker/commit/9e9362489b06646af14958ec8e4836f6481c1dd0))
+
 ## [1.45.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.45.4...v1.45.5) (2026-06-06)
 
 
