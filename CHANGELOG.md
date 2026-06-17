@@ -1,3 +1,10 @@
+# [1.48.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.47.0...v1.48.0) (2026-06-17)
+
+
+### Features
+
+* **ui:** cycle through accepted items for "any of these" objectives ([#439](https://github.com/tarkovtracker-org/TarkovTracker/issues/439)) ([ef119a7](https://github.com/tarkovtracker-org/TarkovTracker/commit/ef119a74f2f2892c1ba7e34aa163a45d11eff76d))
+
 # [1.47.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.46.0...v1.47.0) (2026-06-12)
 
 
