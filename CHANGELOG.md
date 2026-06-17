@@ -1,3 +1,10 @@
+## [1.48.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.0...v1.48.1) (2026-06-17)
+
+
+### Bug Fixes
+
+* **hideout:** match skill requirements by canonical skill id ([#457](https://github.com/tarkovtracker-org/TarkovTracker/issues/457)) ([c9d058b](https://github.com/tarkovtracker-org/TarkovTracker/commit/c9d058b09b7ffc808b83ec498072298985f1df5f)), closes [#420](https://github.com/tarkovtracker-org/TarkovTracker/issues/420)
+
 # [1.48.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.47.0...v1.48.0) (2026-06-17)
 
 
