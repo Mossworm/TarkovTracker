@@ -1,3 +1,11 @@
+## [1.48.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.1...v1.48.2) (2026-06-17)
+
+
+### Bug Fixes
+
+* **maps:** add Icebreaker as unavailable static map data ([#458](https://github.com/tarkovtracker-org/TarkovTracker/issues/458)) ([6f654f1](https://github.com/tarkovtracker-org/TarkovTracker/commit/6f654f10a5b2c0f240409779e1472c90c61833c1))
+* **ui:** show scrollbar on overflowing map and trader selectors ([#459](https://github.com/tarkovtracker-org/TarkovTracker/issues/459)) ([7002a5c](https://github.com/tarkovtracker-org/TarkovTracker/commit/7002a5c2710f4b69c4014a6c2fd9c9130b3e0456))
+
 ## [1.48.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.0...v1.48.1) (2026-06-17)
 
 
