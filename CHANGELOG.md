@@ -1,3 +1,10 @@
+## [1.48.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.4...v1.48.5) (2026-06-18)
+
+
+### Bug Fixes
+
+* **api:** atomic durable-object rate limiting with graceful fallback ([#465](https://github.com/tarkovtracker-org/TarkovTracker/issues/465)) ([9443722](https://github.com/tarkovtracker-org/TarkovTracker/commit/94437226f30ba13067d2d6ecb6bcc29e830a595d)), closes [#464](https://github.com/tarkovtracker-org/TarkovTracker/issues/464)
+
 ## [1.48.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.3...v1.48.4) (2026-06-18)
 
 
