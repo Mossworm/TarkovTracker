@@ -1,3 +1,10 @@
+## [1.48.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.3...v1.48.4) (2026-06-18)
+
+
+### Bug Fixes
+
+* **api:** rate-limit client log sink and drop logged client IP ([#463](https://github.com/tarkovtracker-org/TarkovTracker/issues/463)) ([c1e9035](https://github.com/tarkovtracker-org/TarkovTracker/commit/c1e90354a9b31910c3fb7cac82718dacf90bdc77))
+
 ## [1.48.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.2...v1.48.3) (2026-06-17)
 
 
