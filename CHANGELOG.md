@@ -1,3 +1,10 @@
+## [1.49.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.49.0...v1.49.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* **api:** prevent tasks-core 524s with bounded retry budget and edge SWR ([#474](https://github.com/tarkovtracker-org/TarkovTracker/issues/474)) ([fe2cd41](https://github.com/tarkovtracker-org/TarkovTracker/commit/fe2cd41a2efcfd6029c6a4d476d99206dd51b3b1))
+
 # [1.49.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.48.5...v1.49.0) (2026-06-22)
 
 
