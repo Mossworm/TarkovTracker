@@ -1,3 +1,10 @@
+## [1.50.8](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.7...v1.50.8) (2026-06-30)
+
+
+### Bug Fixes
+
+* **config:** revoke unused client write grants on user_system ([#489](https://github.com/tarkovtracker-org/TarkovTracker/issues/489)) ([3e42ae2](https://github.com/tarkovtracker-org/TarkovTracker/commit/3e42ae2c90f4e48aef60d13779daf85a35cf8298))
+
 ## [1.50.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.6...v1.50.7) (2026-06-30)
 
 
