@@ -1,3 +1,10 @@
+## [1.50.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.3...v1.50.4) (2026-06-30)
+
+
+### Performance Improvements
+
+* **config:** optimize supporters and stripe_events RLS policies ([#484](https://github.com/tarkovtracker-org/TarkovTracker/issues/484)) ([1450314](https://github.com/tarkovtracker-org/TarkovTracker/commit/1450314c9107606dfddd444464a01809323aaa1e))
+
 ## [1.50.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.2...v1.50.3) (2026-06-30)
 
 
