@@ -1,3 +1,10 @@
+## [1.50.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.2...v1.50.3) (2026-06-30)
+
+
+### Bug Fixes
+
+* **config:** add deny-all RLS policy on mutation_rate_limits ([#483](https://github.com/tarkovtracker-org/TarkovTracker/issues/483)) ([8821a21](https://github.com/tarkovtracker-org/TarkovTracker/commit/8821a2171240d7312a0adab0ec050a85fb315c81))
+
 ## [1.50.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.1...v1.50.2) (2026-06-30)
 
 
