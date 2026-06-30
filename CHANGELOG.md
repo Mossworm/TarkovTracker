@@ -1,3 +1,10 @@
+## [1.50.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.4...v1.50.5) (2026-06-30)
+
+
+### Performance Improvements
+
+* **config:** drop unused idx_api_tokens_active index ([#485](https://github.com/tarkovtracker-org/TarkovTracker/issues/485)) ([6309eb6](https://github.com/tarkovtracker-org/TarkovTracker/commit/6309eb6f17dc8e434dc0a911a08bde5305c4a85c))
+
 ## [1.50.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.50.3...v1.50.4) (2026-06-30)
 
 
